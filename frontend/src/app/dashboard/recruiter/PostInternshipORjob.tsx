@@ -1,14 +1,18 @@
 import React from "react";
 import { Users, Briefcase, ArrowRight } from "lucide-react";
 import RecruiterLayout from "../../../Layouts/RecruiterLayout";
+import { useNavigate } from "react-router-dom";
 
 function PostInternshipORjob() {
+  const navigate = useNavigate();
   const handlePostInternship = () => {
     console.log("Navigate to internship posting form");
+    navigate("/dashboard/recruiter/internships-jobs/posts/internship");
   };
 
   const handlePostJob = () => {
     console.log("Navigate to job posting form");
+    navigate("/dashboard/recruiter/internships-jobs/posts/job");
   };
 
   return (

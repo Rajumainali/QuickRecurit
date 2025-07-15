@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -15,11 +15,13 @@ import RecruiterDashboard from "./app/dashboard/recruiter/page";
 import AboutYourself from "./app/onboarding/candidate/about-yourself/page";
 
 import Allinternships from "./app/dashboard/recruiter/Allinternships";
-import PostInternshipORjobs from "./app/dashboard/recruiter/postinternshipORjob";
+import PostInternshipORjobs from "./app/dashboard/recruiter/PostInternshipORjob";
 import AllApplications from "./app/dashboard/recruiter/Allapplicants";
 import ShortlistApplicants from "./app/dashboard/recruiter/ShortlistApplicants";
 import SavedApplicants from "./app/dashboard/recruiter/SavedApplicants";
 import Profile from "./app/dashboard/recruiter/CompanyProfile";
+import PostInternshipform from "./app/dashboard/recruiter/PostInternshipform";
+import PostJobform from "./app/dashboard/recruiter/PostJobform";
 
 import { Toaster } from "react-hot-toast";
 import MyApplications from "./app/dashboard/candidate/Myapplication";
@@ -31,41 +33,43 @@ const App: React.FC = () => {
   const [role, setRole] = useState<"candidate" | "recruiter" | null>(null);
   const [loading, setLoading] = useState(true); // loading state to prevent flicker
 
+  useEffect(() => {
+    const syncAuth = () => {
+      const savedToken = localStorage.getItem("token");
+      const savedRole = localStorage.getItem("role") as
+        | "candidate"
+        | "recruiter"
+        | null;
 
-useEffect(() => {
-  const syncAuth = () => {
-    const savedToken = localStorage.getItem("token");
-    const savedRole = localStorage.getItem("role") as "candidate" | "recruiter" | null;
+      if (!savedToken) {
+        setUserToken(null);
+        setRole(null);
+      } else {
+        setUserToken(savedToken);
+        setRole(savedRole ?? null);
+      }
 
-    if (!savedToken) {
-      setUserToken(null);
-      setRole(null);
-    } else {
-      setUserToken(savedToken);
-      setRole(savedRole ?? null);
-    }
+      setLoading(false);
+    };
 
-    setLoading(false);
-  };
+    syncAuth();
 
-  syncAuth();
+    window.addEventListener("storage", syncAuth); // for other tabs
+    window.addEventListener("app-logout", syncAuth); // ✅ custom logout event
 
-  window.addEventListener("storage", syncAuth); // for other tabs
-  window.addEventListener("app-logout", syncAuth); // ✅ custom logout event
-
-  return () => {
-    window.removeEventListener("storage", syncAuth);
-    window.removeEventListener("app-logout", syncAuth); // ✅ clean up
-  };
-}, []);
-
+    return () => {
+      window.removeEventListener("storage", syncAuth);
+      window.removeEventListener("app-logout", syncAuth); // ✅ clean up
+    };
+  }, []);
 
   const isLoggedIn = !!userToken;
-  console.log(isLoggedIn)
- const dashboardPath = useMemo(() => {
-  return role === "candidate" ? "/dashboard/candidate" : "/dashboard/recruiter";
-}, [role]);
-
+  console.log(isLoggedIn);
+  const dashboardPath = useMemo(() => {
+    return role === "candidate"
+      ? "/dashboard/candidate"
+      : "/dashboard/recruiter";
+  }, [role]);
 
   if (loading) return null; // Prevent flicker or premature routing
 
@@ -80,11 +84,7 @@ useEffect(() => {
           <Route
             path="/login"
             element={
-              isLoggedIn ? (
-                <Navigate to={dashboardPath} replace />
-              ) : (
-                <Login />
-              )
+              isLoggedIn ? <Navigate to={dashboardPath} replace /> : <Login />
             }
           />
           <Route
@@ -133,7 +133,7 @@ useEffect(() => {
             path="/onboarding/candidate/about-yourself"
             element={
               isLoggedIn && role === "candidate" ? (
-                <AboutYourself onSuccess={()=>{}} />
+                <AboutYourself onSuccess={() => {}} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -143,7 +143,7 @@ useEffect(() => {
             path="/onboarding/recruiter/about-yourself"
             element={
               isLoggedIn && role === "recruiter" ? (
-                <AboutYourself onSuccess={()=>{}} />
+                <AboutYourself onSuccess={() => {}} />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -151,13 +151,34 @@ useEffect(() => {
           />
           <Route
             path="/dashboard/candidate/applications"
-            element={isLoggedIn && role === "candidate" ? (<MyApplications />):(<Navigate to="/login" replace />)}
+            element={
+              isLoggedIn && role === "candidate" ? (
+                <MyApplications />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
           />
-          <Route path="/dashboard/candidate/saved" element={isLoggedIn && role === "candidate" ? (<SavedJobs />):(<Navigate to="/login" replace />)} />
+          <Route
+            path="/dashboard/candidate/saved"
+            element={
+              isLoggedIn && role === "candidate" ? (
+                <SavedJobs />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
           <Route
             path="/dashboard/candidate/profile"
-            element={isLoggedIn && role === "candidate" ? (<EditProfile />):(<Navigate to="/login" replace />)}
-          /> 
+            element={
+              isLoggedIn && role === "candidate" ? (
+                <EditProfile />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
           <Route
             path="/dashboard/recruiter/all-internships"
             element={
@@ -173,6 +194,26 @@ useEffect(() => {
             element={
               isLoggedIn && role === "recruiter" ? (
                 <PostInternshipORjobs />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/dashboard/recruiter/internships-jobs/posts/internship"
+            element={
+              isLoggedIn && role === "recruiter" ? (
+                <PostInternshipform />
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+          <Route
+            path="/dashboard/recruiter/internships-jobs/posts/job"
+            element={
+              isLoggedIn && role === "recruiter" ? (
+                <PostJobform />
               ) : (
                 <Navigate to="/login" replace />
               )

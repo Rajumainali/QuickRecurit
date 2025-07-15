@@ -24,7 +24,7 @@ const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
       to: "/dashboard/candidate/applications",
     },
     {
-      name: "Saved Jobs",
+      name: "Bookmarks",
       icon: <Bookmark size={18} />,
       to: "/dashboard/candidate/saved",
     },
@@ -38,19 +38,18 @@ const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   return (
     <aside className="min-h-screen w-64 bg-[#f3edff] dark:bg-[#1a1a1a] border-r p-5">
       <nav className="flex flex-col gap-4">
-          {links.map((link) => (
+        {links.map((link) => (
           <Link
-                key={link.name}
-                to={link.to}
-                className={`flex items-center gap-3 p-3 rounded-xl text-sm font-medium transition-all hover:bg-[#d8c4ff] dark:hover:bg-[#2a2a2a] ${
-                    pathname === link.to
-                    ? "bg-[#cbb2ff] text-black dark:bg-[#333] dark:text-white"
-                    : "text-gray-700 dark:text-gray-300"
-                }`}
-                >
-                {link.icon} {link.name}
-                </Link>
-
+            key={link.name}
+            to={link.to}
+            className={`flex items-center gap-3 p-3 rounded-xl text-sm font-medium transition-all hover:bg-[#d8c4ff] dark:hover:bg-[#2a2a2a] ${
+              pathname === link.to
+                ? "bg-[#cbb2ff] text-black dark:bg-[#333] dark:text-white"
+                : "text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {link.icon} {link.name}
+          </Link>
         ))}
         <button
           onClick={onLogout}
@@ -60,7 +59,6 @@ const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
         </button>
       </nav>
     </aside>
-
   );
 };
 
