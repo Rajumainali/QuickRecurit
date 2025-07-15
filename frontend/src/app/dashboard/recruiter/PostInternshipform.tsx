@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import RecruiterLayout from "../../../Layouts/RecruiterLayout";
+import { toast } from "react-hot-toast";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Types
 interface FormData {
@@ -451,46 +454,64 @@ const PostInternshipForm: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (): Promise<void> => {
-    if (!validateAllSteps()) {
-      alert("Please fix all validation errors before submitting.");
+ const handleSubmit = async (): Promise<void> => {
+  if (!validateAllSteps()) {
+    toast.error("Please fix all validation errors before submitting.");
+    return;
+  }
+
+  setIsSubmitting(true);
+
+  try {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      toast("Authentication token missing. Please login again.");
       return;
     }
 
-    setIsSubmitting(true);
+    const response = await fetch(`${API_BASE_URL}auth/create-post`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `${token}`,
+      },
+      body: JSON.stringify(formData),
+    });
 
-    try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    const result = await response.json();
 
-      console.log("Form submitted:", formData);
-      alert("Internship posted successfully!");
-
-      // Reset form
-      setFormData({
-        title: "",
-        city: "",
-        sector: "",
-        type: "Full Time",
-        location: "Onsite",
-        level: "Entry",
-        deadline: "",
-        openings: "",
-        minSalary: "",
-        maxSalary: "",
-        skills: "",
-        requirements: "",
-      });
-      setCurrentStep(1);
-      setErrors({});
-    } catch (error) {
-      alert(
-        "An error occurred while posting the internship. Please try again."
-      );
-    } finally {
-      setIsSubmitting(false);
+    if (!response.ok) {
+      throw new Error(result.error || "Failed to post internship.");
     }
-  };
+
+    toast.success(result.message || "Internship posted successfully!");
+
+    // Reset form
+    setFormData({
+      title: "",
+      city: "",
+      sector: "",
+      type: "Full Time",
+      location: "Onsite",
+      level: "Entry",
+      deadline: "",
+      openings: "",
+      minSalary: "",
+      maxSalary: "",
+      skills: "",
+      requirements: "",
+    });
+
+    setCurrentStep(1);
+    setErrors({});
+  } catch (error: any) {
+    console.error("Submit error:", error);
+    toast.error(error.message || "An unexpected error occurred.");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const renderProgressBar = () => (
     <div className="w-full max-w-4xl mx-auto mb-8">

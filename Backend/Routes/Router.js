@@ -69,7 +69,9 @@ const {
   handleSignup,
   CheckDetails,
   AddDetails,
-  RecruiterAddDetails
+  RecruiterAddDetails,
+  PostByRecruiter,
+  GetAllPosts
 } = require("../controller/Handler");
 const ensureAuthentication = require("../Middleware/Auth");
 
@@ -96,6 +98,9 @@ router.post(
   ]),
   RecruiterAddDetails
 );
+
+router.post("/create-post",ensureAuthentication,PostByRecruiter)
+router.get("/GetAllPosts",GetAllPosts)
 
 
 module.exports = router;
