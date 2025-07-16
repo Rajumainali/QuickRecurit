@@ -11,13 +11,45 @@ import Faq from "../_components/Faq";
 import { ChevronRight } from "lucide-react";
 import Navbar from "../_components/navbar";
 import Footer from "../_components/footer";
+import { useEffect,useState } from "react";
+
+import { toast } from "react-hot-toast";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 function Page() {
+  const [posts, setPosts] = useState([]);
+
   const handleBrowseAllJobs = () => {
-    // Handle navigation to browse all jobs
-    // You can implement your routing logic here
+    // Implement your routing/navigation logic here, e.g., using react-router
     console.log("Navigate to browse all jobs");
   };
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}auth/GetAllPosts`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch posts");
+        }
+
+        const data = await res.json();
+
+        setPosts(data.posts || []);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        toast.error("Failed to load posts. Please try again later.");
+      }
+    };
+
+    fetchPosts();
+  }, []);
 
   return (
     <>
@@ -62,7 +94,12 @@ function Page() {
             <ChevronRight className="w-5 h-5" />
           </div>
         </div>
-        <VacancyCard />
+     <div className="flex flex-row ml-[10rem] gap-6 mt-10 w-[80vw]">
+  {posts.map((post, idx) => (
+    <VacancyCard key={idx} post={post} />
+  ))}
+</div>
+
         <Feature />
         <LoginandSignupprocess />
         <Discoverjob />

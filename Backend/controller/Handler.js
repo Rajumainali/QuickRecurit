@@ -1,5 +1,6 @@
 const bcrypt = require("bcrypt");
 const User = require("../model/loginSchema");
+const RecruiterPost = require("../model/RecruiterPosts")
 const jwt = require("jsonwebtoken");
 const handleLogin = async (req, res) => {
   const { email, password } = req.body;
@@ -15,7 +16,7 @@ const handleLogin = async (req, res) => {
     const token = jwt.sign(
       { id: user._id, email: user.email, role: user.role },
       process.env.JWT_SECRET,
-      { expiresIn: "1m" }
+      { expiresIn: "1h" }
     );
 
     res.json({ message: "Login successful", token, role: user.role });
@@ -187,10 +188,75 @@ const RecruiterAddDetails = async (req, res) => {
 };
 
 
+const PostByRecruiter = async (req, res) => {
+  try {
+    const email = req.user.email;
+    const postData = req.body;
+
+    let recruiter = await RecruiterPost.findOne({ email });
+
+    if (recruiter) {
+      // Recruiter exists, add post to existing posts
+      recruiter.posts.push(postData);
+      await recruiter.save();
+      return res.status(200).json({ message: "Post added successfully", post: recruiter.posts[recruiter.posts.length - 1] });
+    } else {
+      // First post by this recruiter
+      const newRecruiter = new RecruiterPost({
+        email,
+        posts: [postData],
+      });
+
+      await newRecruiter.save();
+      return res.status(201).json({ message: "First post created", post: newRecruiter.posts[0] });
+    }
+
+  } catch (err) {
+    console.error("Post creation error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+const GetAllPosts = async (req, res) => {
+  try {
+    const recruiters = await RecruiterPost.find({}, { 'posts.applicants': 0 });
+
+    const allPosts = [];
+
+    for (const recruiter of recruiters) {
+      const user = await User.findOne({ email: recruiter.email });
+
+      const companyName = user?.details?.CompanyName || "Unknown Company";
+      const logo = user?.details?.logo || "No logo";
+
+      recruiter.posts.forEach(post => {
+        const postObj = post.toObject();
+        delete postObj._id; // Remove the post's _id
+
+        allPosts.push({
+          ...postObj,
+          recruiterEmail: recruiter.email,
+          companyName,
+          logo
+        });
+      });
+    }
+
+    res.status(200).json({ posts: allPosts });
+  } catch (err) {
+    console.error("Fetch all posts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
 module.exports = {
   handleLogin,
   handleSignup,
   CheckDetails,
   AddDetails,
-  RecruiterAddDetails
+  RecruiterAddDetails,
+  PostByRecruiter,
+  GetAllPosts
 };
