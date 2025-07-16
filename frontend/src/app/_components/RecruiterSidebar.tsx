@@ -92,7 +92,7 @@ const Sidebar: React.FC<{ onLogout: () => void }> = ({ onLogout }) => {
   const isExpanded = (itemName: string) => expandedItems.includes(itemName);
 
   return (
-    <aside className="min-h-screen w-64 bg-[#f3edff] dark:bg-[#1a1a1a] border-r p-5">
+    <aside className="min-h-screen w-64 bg-[#f3edff] dark:bg-[#1a1a1a] border-r p-5 ">
       <nav className="flex flex-col gap-4">
         {/* Main Links */}
         {mainLinks.map((link) => (

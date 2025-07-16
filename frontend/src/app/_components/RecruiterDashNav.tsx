@@ -11,27 +11,27 @@ import { ModeToggle } from "./darktoggle";
 import { Menu, X } from "lucide-react";
 import { toast } from "react-hot-toast";
 
-const RecruiterDashNav = ({ details }: { details: { CompanyName?: string; logo?: string | null } }) => {
+const RecruiterDashNav = ({
+  details,
+}: {
+  details: { CompanyName?: string; logo?: string | null };
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const pathname = location.pathname;
 
+  const [loggingOut, setLoggingOut] = useState(false);
 
-
-const [loggingOut, setLoggingOut] = useState(false);
-
-const handlelogout = () => {
-  if (loggingOut) return;
-  setLoggingOut(true);
- localStorage.removeItem("token");
-localStorage.removeItem("role");
-window.dispatchEvent(new Event("storage")); // sync
-toast.success("Logged out successfully");
-navigate("/login");
-};
-
-
+  const handlelogout = () => {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+    window.dispatchEvent(new Event("storage")); // sync
+    toast.success("Logged out successfully");
+    navigate("/login");
+  };
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -39,7 +39,7 @@ navigate("/login");
 
   return (
     <>
-      <div className="flex justify-between items-center w-full dark:bg-[#000000] py-2">
+      <div className="flex justify-between items-center w-full dark:bg-[#000000] py-2  ">
         <div className="ml-6">
           <img
             src="/img/logo.png"
@@ -87,27 +87,28 @@ navigate("/login");
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
-            
-             {details?.CompanyName && (
-  <NavigationMenuItem>
-    <div className="flex items-center gap-3 px-4 py-2">
-      {details.logo ? (
-        <img
-          src={`${import.meta.env.VITE_API_URL}upload/logos/${details.logo}`}
-          alt={details.CompanyName}
-          className="w-10 h-10 rounded-full object-cover border"
-        />
-      ) : (
-        <div className="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold">
-          {details.CompanyName[0]}
-        </div>
-      )}
-      <span className="text-sm font-medium">Welcome back, {details.CompanyName}!</span>
-    </div>
-  </NavigationMenuItem>
-)}
-
-
+              {details?.CompanyName && (
+                <NavigationMenuItem>
+                  <div className="flex items-center gap-3 px-4 py-2">
+                    {details.logo ? (
+                      <img
+                        src={`${import.meta.env.VITE_API_URL}upload/logos/${
+                          details.logo
+                        }`}
+                        alt={details.CompanyName}
+                        className="w-10 h-10 rounded-full object-cover border"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold">
+                        {details.CompanyName[0]}
+                      </div>
+                    )}
+                    <span className="text-sm font-medium">
+                      Welcome back, {details.CompanyName}!
+                    </span>
+                  </div>
+                </NavigationMenuItem>
+              )}
             </NavigationMenuList>
 
             <NavigationMenuViewport />
@@ -188,25 +189,26 @@ navigate("/login");
             Logout
           </button>
           {details?.CompanyName && (
-  <div className="flex items-center gap-3 mt-6 p-4 rounded-xl bg-gray-100 dark:bg-gray-800">
-    {details.logo ? (
-      <img
-        src={`${import.meta.env.VITE_API_URL}upload/img/${details.logo}`}
-        alt={details.CompanyName}
-        className="w-12 h-12 rounded-full object-cover border"
-      />
-    ) : (
-      <div className="w-12 h-12 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-lg">
-        {details.CompanyName[0]}
-      </div>
-    )}
-    <div className="text-sm font-medium dark:text-white">
-      Welcome back,<br /> {details.CompanyName}!
-    </div>
-  </div>
-)}
-
-
+            <div className="flex items-center gap-3 mt-6 p-4 rounded-xl bg-gray-100 dark:bg-gray-800">
+              {details.logo ? (
+                <img
+                  src={`${import.meta.env.VITE_API_URL}upload/img/${
+                    details.logo
+                  }`}
+                  alt={details.CompanyName}
+                  className="w-12 h-12 rounded-full object-cover border"
+                />
+              ) : (
+                <div className="w-12 h-12 rounded-full bg-gray-400 text-white flex items-center justify-center font-bold text-lg">
+                  {details.CompanyName[0]}
+                </div>
+              )}
+              <div className="text-sm font-medium dark:text-white">
+                Welcome back,
+                <br /> {details.CompanyName}!
+              </div>
+            </div>
+          )}
         </nav>
         <div className="mt-4">
           <ModeToggle />

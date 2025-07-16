@@ -4,7 +4,7 @@ import Footer from "../app/_components/footer";
 import { toast } from "react-hot-toast";
 import RecruiterSidebar from "../app/_components/RecruiterSidebar";
 import MultiStepForm from "../app/onboarding/recruiter/about-yourself/page";
-import RecruiterDashNav from "../app/_components/recruiterDashNav";
+import RecruiterDashNav from "../app/_components/RecruiterDashNav";
 
 const API_BASE_URL = import.meta.env.VITE_API_URL;
 
@@ -25,10 +25,10 @@ interface CandidateLayoutProps {
 const CandidateLayout: React.FC<CandidateLayoutProps> = ({ children }) => {
   const navigate = useNavigate();
   const [result, setResult] = useState<"yes" | "no" | null>(null);
- const [details, setDetails] = useState<{ 
-   CompanyName?: string; 
-   logo?: string | null 
- }>({});
+  const [details, setDetails] = useState<{
+    CompanyName?: string;
+    logo?: string | null;
+  }>({});
   const [loading, setLoading] = useState(true);
   const redirectedRef = useRef(false); //  To avoid multiple redirects/toasts
 
@@ -100,7 +100,7 @@ const CandidateLayout: React.FC<CandidateLayoutProps> = ({ children }) => {
     />
   ) : (
     <>
-       <RecruiterDashNav details={details} />
+      <RecruiterDashNav details={details} />
       <div className="flex min-h-[80vh]">
         <RecruiterSidebar onLogout={handleLogout} />
         <main className="flex-1 p-6 bg-[#faf8ff] dark:bg-[#0f0f0f]">
