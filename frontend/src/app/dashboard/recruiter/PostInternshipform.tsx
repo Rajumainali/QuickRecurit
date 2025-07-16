@@ -59,6 +59,10 @@ interface QuillInstance {
   };
   on: (event: string, callback: () => void) => void;
   off: (event: string, callback: () => void) => void;
+
+  // ✅ Add these two methods:
+  getSelection: () => { index: number; length: number } | null;
+  setSelection: (range: { index: number; length: number }) => void;
 }
 
 // Extend Window interface for Quill
@@ -138,7 +142,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
 
         // Set initial value
         if (value) {
-          quillRef.current.clipboard.dangerouslyPasteHTML(value);
+          quillRef.current!.clipboard.dangerouslyPasteHTML(value);
         }
 
         // Create and store change handler
@@ -150,7 +154,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
         };
 
         // Attach change handler
-        quillRef.current.on("text-change", changeHandlerRef.current);
+        quillRef.current!.on("text-change", changeHandlerRef.current);
         setIsQuillReady(true);
       }
     });
@@ -454,64 +458,63 @@ const PostInternshipForm: React.FC = () => {
     }
   };
 
- const handleSubmit = async (): Promise<void> => {
-  if (!validateAllSteps()) {
-    toast.error("Please fix all validation errors before submitting.");
-    return;
-  }
-
-  setIsSubmitting(true);
-
-  try {
-    const token = localStorage.getItem("token");
-    if (!token) {
-      toast("Authentication token missing. Please login again.");
+  const handleSubmit = async (): Promise<void> => {
+    if (!validateAllSteps()) {
+      toast.error("Please fix all validation errors before submitting.");
       return;
     }
 
-    const response = await fetch(`${API_BASE_URL}auth/create-post`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `${token}`,
-      },
-      body: JSON.stringify(formData),
-    });
+    setIsSubmitting(true);
 
-    const result = await response.json();
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast("Authentication token missing. Please login again.");
+        return;
+      }
 
-    if (!response.ok) {
-      throw new Error(result.error || "Failed to post internship.");
+      const response = await fetch(`${API_BASE_URL}auth/create-post`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to post internship.");
+      }
+
+      toast.success(result.message || "Internship posted successfully!");
+
+      // Reset form
+      setFormData({
+        title: "",
+        city: "",
+        sector: "",
+        type: "Full Time",
+        location: "Onsite",
+        level: "Entry",
+        deadline: "",
+        openings: "",
+        minSalary: "",
+        maxSalary: "",
+        skills: "",
+        requirements: "",
+      });
+
+      setCurrentStep(1);
+      setErrors({});
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      toast.error(error.message || "An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast.success(result.message || "Internship posted successfully!");
-
-    // Reset form
-    setFormData({
-      title: "",
-      city: "",
-      sector: "",
-      type: "Full Time",
-      location: "Onsite",
-      level: "Entry",
-      deadline: "",
-      openings: "",
-      minSalary: "",
-      maxSalary: "",
-      skills: "",
-      requirements: "",
-    });
-
-    setCurrentStep(1);
-    setErrors({});
-  } catch (error: any) {
-    console.error("Submit error:", error);
-    toast.error(error.message || "An unexpected error occurred.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+  };
 
   const renderProgressBar = () => (
     <div className="w-full max-w-4xl mx-auto mb-8">
