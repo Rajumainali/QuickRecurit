@@ -23,6 +23,7 @@ const postSchema = new mongoose.Schema({
   deadline: String,
   requirements: String,
   skills: String,
+  PostType:String,
   postedAt: {
     type: Date,
     default: Date.now,

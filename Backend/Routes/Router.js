@@ -43,12 +43,6 @@ const certificateStorage = multer.diskStorage({
   },
 });
 
-const upload = multer({
-  storage: multer.diskStorage({}),
-  fileFilter: function (req, file, cb) {
-    cb(null, true);
-  },
-});
 
 const multiUpload = multer({
   storage: multer.diskStorage({
@@ -71,7 +65,13 @@ const {
   AddDetails,
   RecruiterAddDetails,
   PostByRecruiter,
-  GetAllPosts
+  GetAllPosts,
+  ApplyPost,
+  updateDetails,
+  updateRecruiterDetails,
+  getUserDetailsByEmail,
+  GetAllPostsByEmail,
+  GetAllPostsFront
 } = require("../controller/Handler");
 const ensureAuthentication = require("../Middleware/Auth");
 
@@ -98,9 +98,31 @@ router.post(
   ]),
   RecruiterAddDetails
 );
+router.put(
+  "/update-details",
+  ensureAuthentication,
+  multiUpload.fields([
+    { name: "profile", maxCount: 1 },
+    { name: "resume", maxCount: 1 },
+  ]),
+  updateDetails
+);
+router.put(
+  "/update-recruiter-details",
+  ensureAuthentication,
+  multiUpload.fields([
+    { name: "logo", maxCount: 1 },
+    { name: "certificate", maxCount: 1 },
+  ]),
+  updateRecruiterDetails
+);
 
 router.post("/create-post",ensureAuthentication,PostByRecruiter)
-router.get("/GetAllPosts",GetAllPosts)
+router.get("/GetAllPosts/:postType",GetAllPosts)
+router.get("/GetAllPostsByEmail/:postType",ensureAuthentication,GetAllPostsByEmail)
+router.get("/apply/:postId",ensureAuthentication,ApplyPost)
+router.get("/get-user-Details",ensureAuthentication,getUserDetailsByEmail)
+router.get("/GetAllPosts",GetAllPostsFront)
 
 
 module.exports = router;

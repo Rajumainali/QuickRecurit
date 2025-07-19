@@ -1,6 +1,7 @@
-import React, { useState, type ChangeEvent } from "react";
+import React, { useState, type ChangeEvent,useEffect } from "react";
 import { Upload, Calendar, User, ChevronDown, Check, Moon, Sun } from "lucide-react";
 import { toast } from "react-hot-toast";
+import { frameData } from "motion/react";
 
 const steps = ["About yourself", "Address", "certificate"];
 
@@ -85,7 +86,14 @@ const SelectiveDropdown: React.FC<{
   );
 };
 
-const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+type MultiStepFormProps = {
+  onSuccess: () => void;
+  from: string;
+};
+
+const MultiStepForm: React.FC<MultiStepFormProps> = ({ onSuccess, from }) => {
+
+  console.log(from)
   const [step, setStep] = useState<number>(0);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [formData, setFormData] = useState<FormData>({
@@ -183,30 +191,74 @@ const handleSubmit = async () => {
     console.log(`${key}:`, value);
   }
 
-  const res = await fetch(`${API_BASE_URL}auth/recruiter-add-details`, {
-    method: "POST",
-    headers: {
-      Authorization: token, // No Content-Type when sending FormData
-    },
-    body: form,
-  });
-
-  const data = await res.json();
-
-  if (res.ok) {
-  console.log("Details added successfully:", data);
-  toast.success("Details submitted!");
-  onSuccess()
-  } else {
-    console.error("Failed to submit details:", data.message);
-    toast.error(data.message || "Failed to submit details");
+  try {
+        const isUpdate = from === "updateRecruiter";
+        const endpoint = isUpdate ? "update-recruiter-details" : "recruiter-add-details";
+        const method = isUpdate ? "PUT" : "POST";
+  
+    const res = await fetch(`${API_BASE_URL}auth/${endpoint}`, {
+      method,
+      headers: {
+        Authorization: token, // Do not set Content-Type for FormData
+      },
+      body: form,
+    });
+  
+    const data = await res.json();
+  
+    if (res.ok) {
+      const successMessage = isUpdate ? "Details updated successfully!" : "Details submitted!";
+      console.log(successMessage, data);
+      toast.success(data.message || successMessage);
+      onSuccess();
+    } else {
+      console.error("Submission failed:", data.message);
+      toast.error(data.message || "Failed to submit details");
+    }
+  } catch (err) {
+    console.error("Error submitting details:", err);
+    toast.error("Something went wrong!");
   }
+
 } catch (err) {
   console.error("Error submitting details:", err);
   toast.error("Something went wrong!");
 }
 
 };
+
+useEffect(() => {
+  const fetchDetails = async () => {
+    if (from === "updateRecruiter") {
+      const token = localStorage.getItem("token");
+            if (!token) {
+        throw new Error("No token found");
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}auth/get-user-details`, {
+        headers: {
+          Authorization: token, // Do not set Content-Type for FormData
+        },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setFormData(prev => ({
+            ...prev,
+            ...data.details,
+          }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  fetchDetails();
+
+}, [from]);
+
+
 
   return (
     <div className={`w-full mx-auto p-8 h-[140vh] transition-colors ${
@@ -283,9 +335,9 @@ const handleSubmit = async () => {
     <div className={`w-16 h-16 rounded-full overflow-hidden flex items-center justify-center ${
       isDarkMode ? 'bg-gray-700' : 'bg-gray-200'
     }`}>
-      {logoImage ? (
+      {logoImage || formData.logo ? (
         <img
-          src={logoImage}
+          src={logoImage || `${API_BASE_URL}upload/logos/${formData.logo}`}
           alt="logo Preview"
           className="w-full h-full object-cover"
         />
@@ -452,6 +504,7 @@ const handleSubmit = async () => {
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                 >
+                  <option>---Select Province---</option>
                   <option value="Bagmati">Bagmati</option>
                   <option value="Gandaki">Gandaki</option>
                   <option value="Lumbini">Lumbini</option>
@@ -477,6 +530,7 @@ const handleSubmit = async () => {
                       : 'bg-white border-gray-300 text-gray-900'
                   }`}
                 >
+                  <option>---Select District---</option>
                   <option value="Kathmandu">Kathmandu</option>
                   <option value="Lalitpur">Lalitpur</option>
                   <option value="Bhaktapur">Bhaktapur</option>
@@ -563,7 +617,7 @@ const handleSubmit = async () => {
 
                 {formData.certificate && (
                   <p className="mt-2 text-sm text-green-500">
-                    File selected: {formData.certificate.name}
+                    File selected: {formData.certificate.name || `${formData.certificate}`}
                   </p>
                 )}
               </div>

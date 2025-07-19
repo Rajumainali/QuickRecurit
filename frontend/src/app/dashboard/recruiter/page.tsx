@@ -9,8 +9,22 @@ import {
   AlertCircle,
 } from "lucide-react";
 import RecruiterLayout from "../../../Layouts/RecruiterLayout";
+import { useNavigate } from "react-router-dom";
+// import { useState,useEffect } from "react";
+
+//  type Post = {
+//     applicants?: any[];
+//  }
 
 const Page = () => {
+  const navigate = useNavigate();
+  // const[data,SetData] = useState<Post[]>([])
+
+  // useEffect(()=>{
+
+    
+  // },[])
+
   const activities = [
     {
       id: 1,
@@ -56,43 +70,9 @@ const Page = () => {
         {/* Header */}
         <div>
           <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Welcome back! Chirfar Plus
+            Welcome back! It’s time to kick off your journey with QuickRecruit.
           </h1>
         </div>
-
-        {/* Profile Completion Banner */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center">
-                <User className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-              </div>
-              <div>
-                <h3 className="text-base font-medium text-gray-900 dark:text-white">
-                  You haven't completed your profile yet.
-                </h3>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  Take a few minutes to fill out your profile.
-                </p>
-                <div className="mt-2 space-y-1 text-sm text-gray-600 dark:text-gray-400">
-                  <div className="flex items-center space-x-2">
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <span>Upload Company Images</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                    <span>Add Social Links</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <button className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-              <span>Complete Now</span>
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-
         {/* Post Job Section */}
         <div className="bg-gray-800 dark:bg-gray-900 rounded-lg p-8 relative overflow-hidden">
           {/* Background decoration */}
@@ -111,7 +91,7 @@ const Page = () => {
             <p className="text-gray-300 mb-6">
               Find the perfect fit for your team- post your job with us today!
             </p>
-            <button className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors">
+            <button onClick={()=>{navigate("/dashboard/recruiter/internships-jobs/posts")}} className="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors">
               <span>Post a Internship/Job</span>
               <Plus className="w-4 h-4" />
             </button>
@@ -131,7 +111,7 @@ const Page = () => {
               0
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
-              Total Jobs
+              Total Jobs/Interns
             </div>
           </div>
 

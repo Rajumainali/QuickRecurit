@@ -97,6 +97,7 @@ const CandidateLayout: React.FC<CandidateLayoutProps> = ({ children }) => {
         setResult("yes");
         window.location.reload();
       }}
+      from="InitialRecruiterForm"
     />
   ) : (
     <>

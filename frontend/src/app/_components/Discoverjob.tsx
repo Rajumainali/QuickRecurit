@@ -1,186 +1,166 @@
-import { useState } from "react";
+import { ChevronsRight, Building, BadgeDollarSign, Filter, MapPin } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import toast from "react-hot-toast";
 import { ButtonDemo } from "./button";
-import { MapPin, DollarSign, Clock, Calendar, ArrowRight } from "lucide-react";
 
-export default function Discoverjob() {
-  const [selectedTab, setSelectedTab] = useState("Popular");
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
-  const jobListings = [
-    {
-      id: 1,
-      title: "Web Developer",
-      company: "Loom",
-      description:
-        "We are on a mission to empower everyone at work to communicate more effectively.",
-      location: "New York",
-      salary: "75k - 90k / Year",
-      type: "Full-Time",
-      date: "8 July 2022",
-      featured: true,
-      defaultColor: "bg-blue-500",
-      img: "/img/webd.jpg",
-    },
-    {
-      id: 3,
-      title: "Senior DevOps Engineer",
-      company: "HubSpot",
-      description:
-        "HubSpot is a leading customer relationship management platform for scaling companies.",
-      location: "California",
-      salary: "75k - 90k / Year",
-      type: "Contract",
-      date: "7 Jan 2022",
-      featured: false,
-      defaultColor: "bg-orange-500",
-      img: "/img/devops-2.svg",
-    },
-    {
-      id: 4,
-      title: "Web Developer",
-      company: "Loom",
-      description:
-        "We are on a mission to empower everyone at work to communicate more effectively.",
-      location: "New York",
-      salary: "75k - 90k / Year",
-      type: "Full-Time",
-      date: "8 July 2022",
-      featured: true,
-      defaultColor: "bg-blue-500",
-      img: "/img/webd.jpg",
-    },
-    {
-      id: 2,
-      title: "Senior DevOps Engineer",
-      company: "HubSpot",
-      description:
-        "HubSpot is a leading customer relationship management platform for scaling companies.",
-      location: "California",
-      salary: "75k - 90k / Year",
-      type: "Contract",
-      date: "7 Jan 2022",
-      featured: false,
-      defaultColor: "bg-orange-500",
-      img: "/img/devops-2.svg",
-    },
-  ];
+type PostType = {
+  title: string;
+  sector: string;
+  level: string;
+  type?: string;
+  location: string;
+  city: string;
+  openings: string;
+  minSalary: string;
+  maxSalary: string;
+  deadline: string;
+  requirements?: string;
+  skills?: string;
+  PostType: string;
+  postedAt: string;
+  recruiterEmail: string;
+  companyName: string;
+  logo?: string;
+};
+
+function VacancyCard() {
+  const [posts, setPosts] = useState<PostType[]>([]);
+  const [sortBy, setSortBy] = useState<"popular" | "latest">("popular");
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}auth/GetAllPosts/job`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch posts");
+        }
+
+        const data = await res.json();
+        setPosts(data.posts || []);
+      } catch (error) {
+        console.error("Error fetching posts:", error);
+        toast.error("Failed to load posts. Please try again later.");
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  const handleApply = (post: any) => {
+    navigate(`/apply/${post.title}`);
+  };
+
+  // Sort posts (simplified logic; adjust based on your popularity metric)
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (sortBy === "latest") {
+      return new Date(b.postedAt).getTime() - new Date(a.postedAt).getTime();
+    }
+    // Default to "popular" (e.g., sort by openings or another metric if available)
+    return parseInt(b.openings) - parseInt(a.openings);
+  });
+
   return (
-    <>
-      <div className="flex justify-center items-center flex-col  ">
-        <ButtonDemo
-          name="JOB VACANCY"
-          className="bg-[#3d3d3d] hover:bg-[#555555] px-6 py-2 rounded-full text-white transition duration-300 dark:text-[#ececec]"
-        />
-
-        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6 mt-6 dark:text-zinc-200">
+    <div className="min-h-screen dark:bg-black py-12">
+      <div className="text-center mb-12">
+        <div className="inline-block bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-4 py-1 rounded-full text-sm font-medium mb-4">
+          JOB VACANCY
+        </div>
+        <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-zinc-200 mb-4">
           Discover the best job
         </h1>
-
-        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed text-center mb-16 dark:text-zinc-400">
-          Start carrer with the best company in the world, we ensures you to get
+        <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed text-center dark:text-zinc-400">
+          Start career with the best company in the world, we ensure you to get
           <br />
           the best job possible.
         </p>
       </div>
-      <div className="max-w-4xl mx-auto p-6 ">
-        {/* Tab Navigation */}
-        <div className="flex justify-center mb-8">
-          <div className="flex bg-white rounded-full p-1 shadow-sm">
-            {["Popular", "Lastest"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setSelectedTab(tab)}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  selectedTab === tab
-                    ? "bg-blue-500 text-white shadow-md"
-                    : "text-gray-600 hover:text-gray-800"
-                }`}
+      <div className="max-w-4xl mx-auto px-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {sortedPosts.map((post, index) => {
+            const cleanDescription = post.requirements
+            ?.replace(/<[^>]*>?/gm, "") // Remove HTML tags
+            .replace(/&nbsp;/g, " ")     // Replace non-breaking spaces
+            .trim() || "";
+
+            const truncatedDescription =
+              cleanDescription.length > 100
+                ? cleanDescription.slice(0, 100) + "..."
+                : cleanDescription;
+            const postDate = new Date(post.postedAt).toLocaleDateString("en-GB", {
+              day: "numeric",
+              month: "short",
+              year: "numeric",
+            });
+
+            return (
+              <div
+                key={index}
+                className="dark:bg-[#3D3D3D] rounded-2xl p-4 shadow-sm flex flex-col justify-between w-[350px] h-full"
               >
-                {tab}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Job Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 ">
-          {jobListings.map((job) => (
-            <div
-              key={job.id}
-              className={`bg-white dark:bg-[#3D3D3D] rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 hover:ring-2 ring-blue-200 border-blue-100 cursor-pointer`}
-            >
-              {/* Header with Logo and Arrow */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center space-x-3">
-                  {/* Empty Logo Placeholder */}
-                  <div
-                    className={`w-12 h-12 ${job.defaultColor} rounded-xl flex items-center justify-center`}
-                  >
-                    <img
-                      src={job.img}
-                      alt="imagelogo"
-                      height={48}
-                      width={48}
-                      className="rounded-4xl"
-                    />
+                <div>
+                  <div className="flex items-start gap-3 mb-2">
+                    <div className="w-10 h-10 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-600 flex items-center justify-center">
+                      {post.logo ? (
+                        <img
+                          src={`${API_BASE_URL}upload/logos/${post.logo}`}
+                          alt={`${post.companyName} logo`}
+                          className="w-full h-full object-fit"
+                        />
+                      ) : (
+                        <Building className="w-5 h-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-base font-semibold text-gray-900 dark:text-[#ECECEC] truncate">
+                        {post.title}
+                      </h2>
+                      <p className="text-xs text-gray-500 dark:text-[#ECECE1] truncate">
+                        {post.companyName}
+                      </p>
+                    </div>
                   </div>
-
-                  {/* Job Title and Company */}
-                  <div>
-                    <h3 className="font-semibold text-gray-900 text-[15px] dark:text-[#ECECEC]">
-                      {job.title}
-                    </h3>
-                    <p className="text-gray-500 text-sm dark:text-[#ECECEC]">
-                      {job.company}
-                    </p>
+                  <p className="text-xs text-gray-600 dark:text-[#ECECE1] mb-2">
+                    {truncatedDescription}
+                  </p>
+                </div>
+                <div className="flex flex-col gap-1 text-xs">
+                  <span className="text-gray-500 dark:text-gray-400">
+                    Deadline:{postDate}
+                  </span>
+                  <div className="flex items-center gap-1 text-gray-700 dark:text-gray-300">
+                    <MapPin className="w-3 h-3" /> {post.city}
+                  </div>
+                  <div className="flex items-center gap-1 text-green-600 dark:text-green-300">
+                    <BadgeDollarSign className="w-3 h-3" /> ${post.minSalary} - ${post.maxSalary}/Month
+                  </div>
+                  <div className="flex items-center gap-1 text-blue-600 dark:text-blue-300">
+                    <Filter className="w-3 h-3" /> {post.type || "Full-Time"}
                   </div>
                 </div>
-
-                {/* Arrow and Date */}
-                <div className="flex items-center space-x-2 ">
-                  {job.date && (
-                    <span className="text-gray-400 text-sm flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {job.date}
-                    </span>
-                  )}
-                </div>
+                <button
+                  onClick={() => handleApply(post)}
+                  className="w-full mt-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center justify-center gap-2 text-sm transition-all duration-200 shadow-sm"
+                >
+                  APPLY NOW
+                  <ChevronsRight className="w-4 h-4" />
+                </button>
               </div>
-
-              {/* Description */}
-              <p className="text-gray-600 text-sm leading-relaxed mb-6 dark:text-[#c9c4c4]">
-                {job.description}
-              </p>
-
-              {/* Job Details */}
-              <div className="flex items-center justify-between text-sm text-gray-500 dark:text-[#8a8a8a]">
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center ">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    {job.location}
-                  </div>
-                  <div className="flex items-center">
-                    <DollarSign className="w-4 h-4 mr-1" />
-                    {job.salary}
-                  </div>
-                  <div className="flex items-center">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {job.type}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex justify-center items-center mt-9 gap-2">
-          <p className="text-gray-600 dark:text-[#bcb9b9]">
-            Did not find what you're looking for?&nbsp;
-            <a href="/" className="underline text-[#7008E7]">
-              View All Job
-            </a>
-          </p>
-          <ArrowRight color="#7008E7" size={20} />
+            );
+          })}
         </div>
       </div>
-    </>
+   </div>
   );
 }
+
+export default VacancyCard;

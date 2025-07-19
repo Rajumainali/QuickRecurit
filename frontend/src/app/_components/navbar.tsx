@@ -18,9 +18,10 @@ import {
   DropdownMenuSeparator,
 } from "../../components/ui/dropdown-menu";
 import { Button } from "../../components/ui/button";
-import { LogOut, LayoutDashboard, User } from "lucide-react";
+import { LogOut, LayoutDashboard,  } from "lucide-react";
 import { ModeToggle } from "./darktoggle";
 import { Menu, X } from "lucide-react";
+import {jwtDecode} from "jwt-decode";
 
 interface UserDetails {
   firstName?: string;
@@ -31,7 +32,34 @@ interface UserDetails {
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+interface JwtPayload {
+  exp: number; // expiry time in seconds
+  [key: string]: any;
+}
+
+const token = localStorage.getItem("token");
+let isAuthenticated = false;
+
+if (token) {
+  try {
+    const decoded = jwtDecode<JwtPayload>(token);
+    const currentTime = Date.now() / 1000; // convert to seconds
+
+    if (decoded.exp > currentTime) {
+      isAuthenticated = true;
+    } else {
+      // Expired
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+    }
+  } catch (error) {
+    // Invalid token
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
+  }
+}
+
   const [details, setDetails] = useState<UserDetails>({});
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,22 +67,19 @@ const Navbar = () => {
   const role = localStorage.getItem("role");
 
   useEffect(() => {
-    // Check authentication status when component mounts or location changes
-    const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
-    
     // Update details from location state if available
     if (location.state) {
       setDetails(location.state as UserDetails);
     }
   }, [location]);
 
+  console.log(isAuthenticated)
+
   const toggleSidebar = () => setIsOpen(!isOpen);
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("role");
-    setIsAuthenticated(false);
     setDetails({});
     navigate("/login");
   };

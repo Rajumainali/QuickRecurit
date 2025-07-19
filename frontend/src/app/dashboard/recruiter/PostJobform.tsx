@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import RecruiterLayout from "../../../Layouts/RecruiterLayout";
+import { toast } from "react-hot-toast";
+
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Types
 interface FormData {
@@ -16,6 +19,7 @@ interface FormData {
   maxSalary: string;
   skills: string;
   requirements: string;
+  PostType:string
 }
 
 interface FormErrors {
@@ -31,6 +35,7 @@ interface FormErrors {
   maxSalary?: string;
   skills?: string;
   requirements?: string;
+  PostType?:string
 }
 
 interface Step {
@@ -56,6 +61,10 @@ interface QuillInstance {
   };
   on: (event: string, callback: () => void) => void;
   off: (event: string, callback: () => void) => void;
+
+  // ✅ Add these two methods:
+  getSelection: () => { index: number; length: number } | null;
+  setSelection: (range: { index: number; length: number }) => void;
 }
 
 // Extend Window interface for Quill
@@ -135,7 +144,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
 
         // Set initial value
         if (value) {
-          quillRef.current.clipboard.dangerouslyPasteHTML(value);
+          quillRef.current!.clipboard.dangerouslyPasteHTML(value);
         }
 
         // Create and store change handler
@@ -147,7 +156,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
         };
 
         // Attach change handler
-        quillRef.current.on("text-change", changeHandlerRef.current);
+        quillRef.current!.on("text-change", changeHandlerRef.current);
         setIsQuillReady(true);
       }
     });
@@ -279,7 +288,7 @@ const QuillEditor: React.FC<QuillEditorProps> = ({
   );
 };
 
-const PostInternshipForm: React.FC = () => {
+const PostJobForm: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [formData, setFormData] = useState<FormData>({
     title: "",
@@ -294,6 +303,7 @@ const PostInternshipForm: React.FC = () => {
     maxSalary: "",
     skills: "",
     requirements: "",
+    PostType:"job"
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -330,9 +340,9 @@ const PostInternshipForm: React.FC = () => {
     const newErrors: FormErrors = {};
 
     if (!formData.title.trim()) {
-      newErrors.title = "Internship title is required";
+      newErrors.title = "Job title is required";
     } else if (formData.title.trim().length < 3) {
-      newErrors.title = "Internship title must be at least 3 characters long";
+      newErrors.title = "Job title must be at least 3 characters long";
     }
 
     if (!formData.city.trim()) {
@@ -342,7 +352,7 @@ const PostInternshipForm: React.FC = () => {
     }
 
     if (!formData.sector) {
-      newErrors.sector = "Internship sector is required";
+      newErrors.sector = "Job sector is required";
     }
 
     if (!formData.deadline) {
@@ -453,18 +463,35 @@ const PostInternshipForm: React.FC = () => {
 
   const handleSubmit = async (): Promise<void> => {
     if (!validateAllSteps()) {
-      alert("Please fix all validation errors before submitting.");
+      toast.error("Please fix all validation errors before submitting.");
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const token = localStorage.getItem("token");
+      if (!token) {
+        toast("Authentication token missing. Please login again.");
+        return;
+      }
 
-      console.log("Form submitted:", formData);
-      alert("Internship posted successfully!");
+      const response = await fetch(`${API_BASE_URL}auth/create-post`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Failed to post Job.");
+      }
+
+      toast.success(result.message || "Job posted successfully!");
 
       // Reset form
       setFormData({
@@ -480,13 +507,14 @@ const PostInternshipForm: React.FC = () => {
         maxSalary: "",
         skills: "",
         requirements: "",
+        PostType:"job"
       });
+
       setCurrentStep(1);
       setErrors({});
-    } catch (error) {
-      alert(
-        "An error occurred while posting the internship. Please try again."
-      );
+    } catch (error: any) {
+      console.error("Submit error:", error);
+      toast.error(error.message || "An unexpected error occurred.");
     } finally {
       setIsSubmitting(false);
     }
@@ -553,7 +581,7 @@ const PostInternshipForm: React.FC = () => {
         </label>
         <input
           type="text"
-          placeholder="eg. UI UX Intern"
+          placeholder="eg. UI UX Job"
           value={formData.title}
           onChange={(e) => handleInputChange("title", e.target.value)}
           className={`w-full px-3 py-2 border rounded-lg 
@@ -848,7 +876,6 @@ const PostInternshipForm: React.FC = () => {
         <QuillEditor
           value={formData.skills}
           onChange={(value) => handleInputChange("skills", value)}
-          placeholder="List the skills required for this internship..."
           error={errors.skills}
         />
       </div>
@@ -1058,4 +1085,4 @@ const PostInternshipForm: React.FC = () => {
   );
 };
 
-export default PostInternshipForm;
+export default PostJobForm;

@@ -19,6 +19,7 @@ interface FormData {
   maxSalary: string;
   skills: string;
   requirements: string;
+  PostType:string
 }
 
 interface FormErrors {
@@ -34,6 +35,7 @@ interface FormErrors {
   maxSalary?: string;
   skills?: string;
   requirements?: string;
+  PostType?:string
 }
 
 interface Step {
@@ -301,6 +303,7 @@ const PostInternshipForm: React.FC = () => {
     maxSalary: "",
     skills: "",
     requirements: "",
+    PostType:"Intern"
   });
 
   const [errors, setErrors] = useState<FormErrors>({});
@@ -504,6 +507,7 @@ const PostInternshipForm: React.FC = () => {
         maxSalary: "",
         skills: "",
         requirements: "",
+        PostType:"intern"
       });
 
       setCurrentStep(1);

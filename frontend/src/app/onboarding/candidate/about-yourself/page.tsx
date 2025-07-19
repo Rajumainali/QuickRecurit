@@ -1,4 +1,4 @@
-import React, { useState, type ChangeEvent } from "react";
+import React, { useState, type ChangeEvent,useEffect } from "react";
 import {
   Upload,
   Calendar,
@@ -32,7 +32,6 @@ type FormData = {
   dateOfBirth: string;
   sectors: string[];
   designation: string;
-  aboutMe: string;
   province: string;
   city: string;
   postalCode: string;
@@ -95,8 +94,13 @@ const SelectiveDropdown: React.FC<{
     </div>
   );
 };
+type MultiStepFormProps = {
+  onSuccess: () => void;
+  from: string;
+};
 
-const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
+const MultiStepForm: React.FC<MultiStepFormProps> = ({ onSuccess, from }) => {
+  console.log(from);
   const [step, setStep] = useState<number>(0);
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [formData, setFormData] = useState<FormData>({
@@ -104,9 +108,8 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
     lastName: "",
     gender: "",
     dateOfBirth: "",
-    sectors: [""],
+    sectors:[] ,
     designation: "",
-    aboutMe: "",
     province: "",
     city: "",
     postalCode: "",
@@ -177,7 +180,6 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
       form.append("gender", formData.gender);
       form.append("dateOfBirth", formData.dateOfBirth);
       form.append("designation", formData.designation);
-      form.append("aboutMe", formData.aboutMe);
       form.append("province", formData.province);
       form.append("city", formData.city);
       form.append("postalCode", formData.postalCode);
@@ -193,29 +195,74 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
         console.log(`${key}:`, value);
       }
 
-      const res = await fetch(`${API_BASE_URL}auth/add-details`, {
-        method: "POST",
-        headers: {
-          Authorization: token, // No Content-Type when sending FormData
-        },
-        body: form,
-      });
+      try {
+      const isUpdate = from === "updateCandidate";
+      const endpoint = isUpdate ? "update-details" : "add-details";
+      const method = isUpdate ? "PUT" : "POST";
 
-      const data = await res.json();
+  const res = await fetch(`${API_BASE_URL}auth/${endpoint}`, {
+    method,
+    headers: {
+      Authorization: token, // Do not set Content-Type for FormData
+    },
+    body: form,
+  });
 
-      if (res.ok) {
-        console.log("Details added successfully:", data);
-        toast.success("Details submitted!");
-        onSuccess();
-      } else {
-        console.error("Failed to submit details:", data.message);
-        toast.error(data.message || "Failed to submit details");
-      }
+  const data = await res.json();
+
+  if (res.ok) {
+    const successMessage = isUpdate ? "Details updated successfully!" : "Details submitted!";
+    console.log(successMessage, data);
+    toast.success(data.message || successMessage);
+    onSuccess();
+  } else {
+    console.error("Submission failed:", data.message);
+    toast.error(data.message || "Failed to submit details");
+  }
+} catch (err) {
+  console.error("Error submitting details:", err);
+  toast.error("Something went wrong!");
+}
+
+  
     } catch (err) {
       console.error("Error submitting details:", err);
       toast.error("Something went wrong!");
     }
+
   };
+
+useEffect(() => {
+  const fetchDetails = async () => {
+    if (from === "updateCandidate") {
+      const token = localStorage.getItem("token");
+            if (!token) {
+        throw new Error("No token found");
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}auth/get-user-details`, {
+        headers: {
+          Authorization: token, // Do not set Content-Type for FormData
+        },
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          setFormData(prev => ({
+            ...prev,
+            ...data.details,
+          }));
+        }
+      } catch (err) {
+        console.error(err);
+      }
+    }
+  };
+
+  fetchDetails();
+
+}, [from]);
+
 
   return (
     <div className="w-full mx-auto p-8 h-[140vh] transition-colors dark:bg-gray-900 bg-gray-50 rounded-3xl">
@@ -271,9 +318,9 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
                     isDarkMode ? "bg-gray-700" : "bg-gray-200"
                   }`}
                 >
-                  {profileImage ? (
+                  {profileImage || formData.profile ? (
                     <img
-                      src={profileImage}
+                      src={profileImage || `${API_BASE_URL}upload/img/${formData.profile}`}
                       alt="Profile Preview"
                       className="w-full h-full object-cover"
                     />
@@ -337,6 +384,7 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
                   onChange={handleChange}
                   className="w-full border rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-white border-gray-300 text-gray-900"
                 >
+                  <option>---Select Gender---</option>
                   <option value="Male">Male</option>
                   <option value="Female">Female</option>
                   <option value="Other">Other</option>
@@ -401,6 +449,7 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
                   onChange={handleChange}
                   className="w-full px-4 py-3 text-left border rounded-lg flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-white border-gray-300 text-gray-900"
                 >
+                  <option>---Select Province---</option>
                   <option value="Bagmati">Bagmati</option>
                   <option value="Gandaki">Gandaki</option>
                   <option value="Lumbini">Lumbini</option>
@@ -420,6 +469,7 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
                   onChange={handleChange}
                   className="w-full px-4 py-3 text-left border rounded-lg flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white bg-white border-gray-300 text-gray-900"
                 >
+                  <option>---Select District---</option>
                   <option value="Kathmandu">Kathmandu</option>
                   <option value="Lalitpur">Lalitpur</option>
                   <option value="Bhaktapur">Bhaktapur</option>
@@ -490,7 +540,7 @@ const MultiStepForm: React.FC<{ onSuccess: () => void }> = ({ onSuccess }) => {
 
                 {formData.resume && (
                   <p className="mt-2 text-sm text-green-500">
-                    File selected: {formData.resume.name}
+                    File selected: {formData.resume.name || `${formData.resume}`}
                   </p>
                 )}
               </div>

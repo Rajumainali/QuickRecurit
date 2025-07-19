@@ -28,7 +28,7 @@ function Page() {
   useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const res = await fetch(`${API_BASE_URL}auth/GetAllPosts`, {
+        const res = await fetch(`${API_BASE_URL}auth/GetAllPosts/intern`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -69,22 +69,10 @@ function Page() {
                   Search your career opportunity through the available
                   positions.
                 </p>
-                <div className="flex flex-row justify-center items-center gap-5 mt-7">
+                <div className="flex flex-row justify-start items-center gap-5 mt-7">
                   <ButtonDemo
                     name="Featured Internship"
                     className="bg-[#aa8bed] text-black hover:bg-[#a187d7] rounded-[40px]"
-                  />
-                  <ButtonDemo
-                    name="Nearest"
-                    className="bg-gray-600 text-black hover:bg-gray-700 rounded-[40px]"
-                  />
-                  <ButtonDemo
-                    name="Newest"
-                    className="bg-gray-600 text-black hover:bg-gray-700 rounded-[40px]"
-                  />
-                  <ButtonDemo
-                    name="Oldest"
-                    className="bg-gray-600 text-black hover:bg-gray-700 rounded-[40px]"
                   />
                 </div>
               </div>
@@ -98,7 +86,7 @@ function Page() {
                 <ChevronRight className="w-5 h-5" />
               </div>
             </div>
-            <div className="flex flex-row ml-[10rem] gap-6 mt-10 w-[80vw] flex-wrap">
+           <div className="flex flex-row ml-[10rem] gap-12 mt-10 w-[80vw] flex-wrap  justify-center">
               {posts.map((post, idx) => (
                 <VacancyCard key={idx} post={post} />
               ))}

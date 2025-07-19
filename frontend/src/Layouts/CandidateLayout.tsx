@@ -95,7 +95,7 @@ const [details, setDetails] = useState<{ firstName?: string; profile?: string | 
  <MultiStepForm onSuccess={() => {
   setResult("yes");
   window.location.reload();
-}} />
+}} from="InitialShow" />
 
   ) : (
     <>

@@ -55,16 +55,15 @@ const App: React.FC = () => {
     syncAuth();
 
     window.addEventListener("storage", syncAuth); // for other tabs
-    window.addEventListener("app-logout", syncAuth); // ✅ custom logout event
+    window.addEventListener("app-logout", syncAuth); // custom logout event
 
     return () => {
       window.removeEventListener("storage", syncAuth);
-      window.removeEventListener("app-logout", syncAuth); // ✅ clean up
+      window.removeEventListener("app-logout", syncAuth); // clean up
     };
   }, []);
 
   const isLoggedIn = !!userToken;
-  console.log(isLoggedIn);
   const dashboardPath = useMemo(() => {
     return role === "candidate"
       ? "/dashboard/candidate"
@@ -133,7 +132,7 @@ const App: React.FC = () => {
             path="/onboarding/candidate/about-yourself"
             element={
               isLoggedIn && role === "candidate" ? (
-                <AboutYourself onSuccess={() => {}} />
+                <AboutYourself onSuccess={() => {} } from="" />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -143,7 +142,7 @@ const App: React.FC = () => {
             path="/onboarding/recruiter/about-yourself"
             element={
               isLoggedIn && role === "recruiter" ? (
-                <AboutYourself onSuccess={() => {}} />
+                <AboutYourself onSuccess={() => {}}  from=""/>
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -199,6 +198,7 @@ const App: React.FC = () => {
               )
             }
           />
+       
           <Route
             path="/dashboard/recruiter/internships-jobs/posts/internship"
             element={
