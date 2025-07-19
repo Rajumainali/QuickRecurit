@@ -4,6 +4,8 @@ const RecruiterPost = require("../model/RecruiterPosts")
 const jwt = require("jsonwebtoken");
 const fs = require('fs');
 const path = require('path');
+const {spawn} = require("child_process")
+const os = require("os");
 const handleLogin = async (req, res) => {
   const { email, password } = req.body;
 
@@ -333,6 +335,37 @@ const GetAllPostsByEmail = async (req, res) => {
 };
 
 
+const FetchAllPostsByEmail = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const recruiter = await RecruiterPost.findOne({ email });
+    if (!recruiter) return res.status(404).json({ error: "Recruiter not found" });
+
+    const user = await User.findOne({ email: recruiter.email });
+
+    const companyName = user?.details?.CompanyName || "Unknown Company";
+    const logo = user?.details?.logo || "No logo";
+
+    const allPosts = recruiter.posts.map(post => {
+      const postObj = post.toObject();
+      return {
+        ...postObj,
+        recruiterEmail: recruiter.email,
+        companyName,
+        logo
+      };
+    });
+
+    res.status(200).json({ posts: allPosts });
+  } catch (err) {
+    console.error("Fetch all posts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
+
+
 const ApplyPost = async (req, res) => {
   try {
     const userEmail = req.user.email;
@@ -543,6 +576,72 @@ const getUserDetailsByEmail = async (req, res) => {
   }
 };
 
+const resumeRank = async (req, res) => {
+  const { requirement, resumes } = req.body;
+
+  if (!requirement || !Array.isArray(resumes)) {
+    return res.status(400).json({ error: "Missing requirement or resumes." });
+  }
+
+  try {
+    // Step 1: Write the requirement to a temp file
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "resume-rank-"));
+    const jobDescPath = path.join(tempDir, `job_description.txt`);
+    fs.writeFileSync(jobDescPath, requirement);
+
+    // Step 2: Copy only requested resumes to temp folder
+    const resumesDir = path.join(process.cwd(), "upload", "resume");
+    const tempResumeDir = path.join(tempDir, "resumes");
+    fs.mkdirSync(tempResumeDir);
+
+    for (const resumeName of resumes) {
+      const sourcePath = path.join(resumesDir, resumeName);
+      const destPath = path.join(tempResumeDir, resumeName);
+
+      if (fs.existsSync(sourcePath)) {
+        fs.copyFileSync(sourcePath, destPath);
+      } else {
+        console.warn(`Resume not found: ${resumeName}`);
+      }
+    }
+
+    // Step 3: Run Python script with temp resume folder
+const python = spawn("python", ["app.py", jobDescPath, ...fs.readdirSync(tempResumeDir).map(name => path.join(tempResumeDir, name))]);
+
+
+
+    let result = "";
+
+    python.stdout.on("data", (data) => {
+      result += data.toString();
+    });
+
+    python.stderr.on("data", (data) => {
+      console.error("Python stderr:", data.toString());
+    });
+
+    python.on("close", (code) => {
+      // Cleanup
+      fs.rmSync(tempDir, { recursive: true, force: true });
+
+      if (code !== 0) {
+        return res.status(500).json({ error: "Python script failed." });
+      }
+
+      try {
+        const parsed = JSON.parse(result);
+        return res.json(parsed);
+      } catch (err) {
+        console.error("JSON parse error:", err);
+        return res.status(500).json({ error: "Invalid JSON from Python." });
+      }
+    });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({ error: "Server error." });
+  }
+};
+
 
 
 module.exports = {
@@ -558,5 +657,7 @@ module.exports = {
   updateRecruiterDetails,
   getUserDetailsByEmail,
   GetAllPostsByEmail,
-  GetAllPostsFront
+  GetAllPostsFront,
+  FetchAllPostsByEmail,
+  resumeRank
 };
