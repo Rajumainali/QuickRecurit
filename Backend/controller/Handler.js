@@ -1,9 +1,9 @@
 const bcrypt = require("bcrypt");
 const User = require("../model/loginSchema");
-const RecruiterPost = require("../model/RecruiterPosts")
+const RecruiterPost = require("../model/RecruiterPosts");
 const jwt = require("jsonwebtoken");
-const fs = require('fs');
-const path = require('path');
+const fs = require("fs");
+const path = require("path");
 const handleLogin = async (req, res) => {
   const { email, password } = req.body;
 
@@ -68,7 +68,7 @@ const CheckDetails = async (req, res) => {
     }
 
     if (user.details && Object.keys(user.details).length > 0) {
-      return res.json({ result: "yes" ,Details:user.details});
+      return res.json({ result: "yes", Details: user.details });
     } else {
       return res.json({ result: "no" });
     }
@@ -112,7 +112,7 @@ const AddDetails = async (req, res) => {
       currentAddress,
       sectors,
       profile, // filename saved in /upload/img/
-      resume,  // filename saved in /upload/resume/
+      resume, // filename saved in /upload/resume/
     };
 
     const user = await User.findOneAndUpdate(
@@ -135,10 +135,10 @@ const AddDetails = async (req, res) => {
 const RecruiterAddDetails = async (req, res) => {
   try {
     const {
-    CompanyName,
-    RecuriterName,
-    CompanyPhone,
-    companyWebsite,
+      CompanyName,
+      RecuriterName,
+      CompanyPhone,
+      companyWebsite,
       designation,
       CompanyDescription,
       province,
@@ -155,10 +155,10 @@ const RecruiterAddDetails = async (req, res) => {
     const certificate = req.files?.certificate?.[0]?.filename || null;
 
     const details = {
-     CompanyName,
-    RecuriterName,
-    CompanyPhone,
-    companyWebsite,
+      CompanyName,
+      RecuriterName,
+      CompanyPhone,
+      companyWebsite,
       designation,
       CompanyDescription,
       province,
@@ -167,7 +167,7 @@ const RecruiterAddDetails = async (req, res) => {
       currentAddress,
       sectors,
       logo, // filename saved in /upload/logos/
-      certificate,  // filename saved in /upload/certificates/
+      certificate, // filename saved in /upload/certificates/
     };
 
     const user = await User.findOneAndUpdate(
@@ -187,7 +187,6 @@ const RecruiterAddDetails = async (req, res) => {
   }
 };
 
-
 const PostByRecruiter = async (req, res) => {
   try {
     const email = req.user.email;
@@ -199,7 +198,10 @@ const PostByRecruiter = async (req, res) => {
       // Recruiter exists, add post to existing posts
       recruiter.posts.push(postData);
       await recruiter.save();
-      return res.status(200).json({ message: "Post added successfully", post: recruiter.posts[recruiter.posts.length - 1] });
+      return res.status(200).json({
+        message: "Post added successfully",
+        post: recruiter.posts[recruiter.posts.length - 1],
+      });
     } else {
       // First post by this recruiter
       const newRecruiter = new RecruiterPost({
@@ -208,9 +210,10 @@ const PostByRecruiter = async (req, res) => {
       });
 
       await newRecruiter.save();
-      return res.status(201).json({ message: "First post created", post: newRecruiter.posts[0] });
+      return res
+        .status(201)
+        .json({ message: "First post created", post: newRecruiter.posts[0] });
     }
-
   } catch (err) {
     console.error("Post creation error:", err);
     res.status(500).json({ error: "Server error" });
@@ -231,7 +234,7 @@ const GetAllPosts = async (req, res) => {
       const companyName = user?.details?.CompanyName || "Unknown Company";
       const logo = user?.details?.logo || "No logo";
 
-      recruiter.posts.forEach(post => {
+      recruiter.posts.forEach((post) => {
         const isIntern = post.PostType?.toLowerCase() === "intern";
 
         //  Filter logic
@@ -245,7 +248,7 @@ const GetAllPosts = async (req, res) => {
             ...postObj,
             recruiterEmail: recruiter.email,
             companyName,
-            logo
+            logo,
           });
         }
       });
@@ -258,10 +261,9 @@ const GetAllPosts = async (req, res) => {
   }
 };
 
-
 const GetAllPostsFront = async (req, res) => {
   try {
-    const recruiters = await RecruiterPost.find({}, { 'posts.applicants': 0 });
+    const recruiters = await RecruiterPost.find({}, { "posts.applicants": 0 });
 
     const allPosts = [];
 
@@ -269,16 +271,16 @@ const GetAllPostsFront = async (req, res) => {
       const user = await User.findOne({ email: recruiter.email });
 
       const companyName = user?.details?.CompanyName || "Unknown Company";
-      const logo = user?.details?.logo  || "No logo";
+      const logo = user?.details?.logo || "No logo";
 
-      recruiter.posts.forEach(post => {
+      recruiter.posts.forEach((post) => {
         const postObj = post.toObject();
 
         allPosts.push({
           ...postObj,
           recruiterEmail: recruiter.email,
           companyName,
-          logo
+          logo,
         });
       });
     }
@@ -297,7 +299,8 @@ const GetAllPostsByEmail = async (req, res) => {
     const typeFilter = postType.toLowerCase();
 
     const recruiter = await RecruiterPost.findOne({ email });
-    if (!recruiter) return res.status(404).json({ error: "Recruiter not found" });
+    if (!recruiter)
+      return res.status(404).json({ error: "Recruiter not found" });
 
     const user = await User.findOne({ email: recruiter.email });
 
@@ -306,7 +309,7 @@ const GetAllPostsByEmail = async (req, res) => {
 
     const allPosts = [];
 
-    recruiter.posts.forEach(post => {
+    recruiter.posts.forEach((post) => {
       const isIntern = post.PostType?.toLowerCase() === "intern";
 
       // Filter logic
@@ -320,7 +323,7 @@ const GetAllPostsByEmail = async (req, res) => {
           ...postObj,
           recruiterEmail: recruiter.email,
           companyName,
-          logo
+          logo,
         });
       }
     });
@@ -331,7 +334,6 @@ const GetAllPostsByEmail = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
-
 
 const ApplyPost = async (req, res) => {
   try {
@@ -356,16 +358,18 @@ const ApplyPost = async (req, res) => {
     // Step 3: Find the specific post
     const post = recruiter.posts.id(postId);
     if (!post) {
-      return res.status(404).json({ message: "Post not found in recruiter's posts" });
+      return res
+        .status(404)
+        .json({ message: "Post not found in recruiter's posts" });
     }
 
     //  Step 4: Check if already applied
-    const alreadyApplied = post.applicants.some(
-      (a) => a.email === user.email
-    );
+    const alreadyApplied = post.applicants.some((a) => a.email === user.email);
 
     if (alreadyApplied) {
-      return res.status(400).json({ message: "You have already applied to this post." });
+      return res
+        .status(400)
+        .json({ message: "You have already applied to this post." });
     }
 
     // Step 5: Create applicant object
@@ -387,7 +391,6 @@ const ApplyPost = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
-
 
 const updateDetails = async (req, res) => {
   try {
@@ -419,15 +422,22 @@ const updateDetails = async (req, res) => {
 
     // Remove old files if new ones uploaded
     const profilePath = path.join(__dirname, "../upload/img/", oldProfile);
-    if (req.files?.profile?.[0]?.filename && oldProfile && fs.existsSync(profilePath)) {
+    if (
+      req.files?.profile?.[0]?.filename &&
+      oldProfile &&
+      fs.existsSync(profilePath)
+    ) {
       fs.unlinkSync(profilePath);
     }
 
     const resumePath = path.join(__dirname, "../upload/resume/", oldResume);
-    if (req.files?.resume?.[0]?.filename && oldResume && fs.existsSync(resumePath)) {
+    if (
+      req.files?.resume?.[0]?.filename &&
+      oldResume &&
+      fs.existsSync(resumePath)
+    ) {
       fs.unlinkSync(resumePath);
     }
-
 
     const details = {
       firstName,
@@ -450,14 +460,15 @@ const updateDetails = async (req, res) => {
       { new: true }
     );
 
-    res.json({ message: "Details updated successfully", details: updatedUser.details });
+    res.json({
+      message: "Details updated successfully",
+      details: updatedUser.details,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
-
 
 const updateRecruiterDetails = async (req, res) => {
   try {
@@ -493,7 +504,9 @@ const updateRecruiterDetails = async (req, res) => {
       fs.unlinkSync(path.join(__dirname, "../upload/logos/", oldLogo));
     }
     if (req.files?.certificate?.[0]?.filename && oldCertificate) {
-      fs.unlinkSync(path.join(__dirname, "../upload/certificates/", oldCertificate));
+      fs.unlinkSync(
+        path.join(__dirname, "../upload/certificates/", oldCertificate)
+      );
     }
 
     const details = {
@@ -518,13 +531,15 @@ const updateRecruiterDetails = async (req, res) => {
       { new: true }
     );
 
-    res.json({ message: "Recruiter details updated successfully", details: updatedUser.details });
+    res.json({
+      message: "Recruiter details updated successfully",
+      details: updatedUser.details,
+    });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Server error", error: err.message });
   }
 };
-
 
 const getUserDetailsByEmail = async (req, res) => {
   try {
@@ -542,8 +557,35 @@ const getUserDetailsByEmail = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+const FetchAllPostsByEmail = async (req, res) => {
+  try {
+    const email = req.user.email;
 
+    const recruiter = await RecruiterPost.findOne({ email });
+    if (!recruiter)
+      return res.status(404).json({ error: "Recruiter not found" });
 
+    const user = await User.findOne({ email: recruiter.email });
+
+    const companyName = user?.details?.CompanyName || "Unknown Company";
+    const logo = user?.details?.logo || "No logo";
+
+    const allPosts = recruiter.posts.map((post) => {
+      const postObj = post.toObject();
+      return {
+        ...postObj,
+        recruiterEmail: recruiter.email,
+        companyName,
+        logo,
+      };
+    });
+
+    res.status(200).json({ posts: allPosts });
+  } catch (err) {
+    console.error("Fetch all posts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
 
 module.exports = {
   handleLogin,
@@ -558,5 +600,6 @@ module.exports = {
   updateRecruiterDetails,
   getUserDetailsByEmail,
   GetAllPostsByEmail,
-  GetAllPostsFront
+  GetAllPostsFront,
+  FetchAllPostsByEmail,
 };
