@@ -4,6 +4,11 @@ const applicantSchema = new mongoose.Schema({
   name: String,
   email: String,
   resumeLink: String,
+  image: String,
+  status: {
+    type: String,
+    default: "unapproved",
+  },
   appliedAt: {
     type: Date,
     default: Date.now,
@@ -23,7 +28,7 @@ const postSchema = new mongoose.Schema({
   deadline: String,
   requirements: String,
   skills: String,
-  PostType:String,
+  PostType: String,
   postedAt: {
     type: Date,
     default: Date.now,

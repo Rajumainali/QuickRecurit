@@ -4,6 +4,8 @@ const RecruiterPost = require("../model/RecruiterPosts");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+const { spawn } = require("child_process");
+const os = require("os");
 const handleLogin = async (req, res) => {
   const { email, password } = req.body;
 
@@ -335,6 +337,36 @@ const GetAllPostsByEmail = async (req, res) => {
   }
 };
 
+const FetchAllPostsByEmail = async (req, res) => {
+  try {
+    const email = req.user.email;
+
+    const recruiter = await RecruiterPost.findOne({ email });
+    if (!recruiter)
+      return res.status(404).json({ error: "Recruiter not found" });
+
+    const user = await User.findOne({ email: recruiter.email });
+
+    const companyName = user?.details?.CompanyName || "Unknown Company";
+    const logo = user?.details?.logo || "No logo";
+
+    const allPosts = recruiter.posts.map((post) => {
+      const postObj = post.toObject();
+      return {
+        ...postObj,
+        recruiterEmail: recruiter.email,
+        companyName,
+        logo,
+      };
+    });
+
+    res.status(200).json({ posts: allPosts });
+  } catch (err) {
+    console.error("Fetch all posts error:", err);
+    res.status(500).json({ error: "Server error" });
+  }
+};
+
 const ApplyPost = async (req, res) => {
   try {
     const userEmail = req.user.email;
@@ -377,6 +409,7 @@ const ApplyPost = async (req, res) => {
       name: `${user.details.firstName} ${user.details.lastName}`,
       email: user.email,
       resumeLink: `/upload/resume/${user.details.resume}`,
+      image: `/upload/img/${user.details.profile}`, // <-- new field added
     };
 
     // Step 6: Add to applicants array
@@ -557,36 +590,163 @@ const getUserDetailsByEmail = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
-const FetchAllPostsByEmail = async (req, res) => {
+
+const resumeRank = async (req, res) => {
+  const { requirement, resumes } = req.body;
+
+  if (!requirement || !Array.isArray(resumes) || resumes.length === 0) {
+    return res
+      .status(400)
+      .json({ error: "Missing or invalid 'requirement' or 'resumes'." });
+  }
+
   try {
-    const email = req.user.email;
+    // Step 1: Create a temporary directory
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "resume-rank-"));
+    const jobDescPath = path.join(tempDir, "job_description.txt");
+    const tempResumeDir = path.join(tempDir, "resumes");
+    fs.mkdirSync(tempResumeDir);
 
-    const recruiter = await RecruiterPost.findOne({ email });
-    if (!recruiter)
-      return res.status(404).json({ error: "Recruiter not found" });
+    // Step 2: Write job description to file
+    fs.writeFileSync(jobDescPath, requirement, "utf-8");
 
-    const user = await User.findOne({ email: recruiter.email });
+    // Step 3: Copy requested resumes into temp folder
+    const resumesDir = path.join(process.cwd(), "upload", "resume");
 
-    const companyName = user?.details?.CompanyName || "Unknown Company";
-    const logo = user?.details?.logo || "No logo";
+    resumes.forEach((resumeName) => {
+      const source = path.join(resumesDir, resumeName);
+      const destination = path.join(tempResumeDir, resumeName);
 
-    const allPosts = recruiter.posts.map((post) => {
-      const postObj = post.toObject();
-      return {
-        ...postObj,
-        recruiterEmail: recruiter.email,
-        companyName,
-        logo,
-      };
+      if (fs.existsSync(source)) {
+        fs.copyFileSync(source, destination);
+      } else {
+        console.warn(`[Warning] Resume not found: ${resumeName}`);
+      }
     });
 
-    res.status(200).json({ posts: allPosts });
+    // Step 4: Execute Python script
+    const resumePaths = fs
+      .readdirSync(tempResumeDir)
+      .map((name) => path.join(tempResumeDir, name));
+
+    const python = spawn("python", ["app.py", jobDescPath, ...resumePaths]);
+
+    let result = "";
+    let errorOutput = "";
+
+    python.stdout.on("data", (data) => {
+      result += data.toString();
+    });
+
+    python.stderr.on("data", (data) => {
+      errorOutput += data.toString();
+      console.error("[Python stderr]", data.toString());
+    });
+
+    python.on("close", (code) => {
+      // Step 5: Cleanup temp directory
+      fs.rmSync(tempDir, { recursive: true, force: true });
+
+      if (code !== 0) {
+        return res.status(500).json({
+          error: "Python script failed.",
+          details: errorOutput || "Unknown error.",
+        });
+      }
+
+      try {
+        const parsed = JSON.parse(result);
+        return res.status(200).json(parsed);
+      } catch (err) {
+        console.error("JSON parse error:", err.message);
+        return res
+          .status(500)
+          .json({ error: "Invalid JSON output from Python script." });
+      }
+    });
   } catch (err) {
-    console.error("Fetch all posts error:", err);
-    res.status(500).json({ error: "Server error" });
+    console.error("[Server error]", err.message);
+    return res.status(500).json({ error: "Internal server error." });
   }
 };
+const applicants = async (req, res) => {
+  try {
+    const candidateEmail = req.user.email;
 
+    const allRecruiters = await RecruiterPost.find();
+
+    let matchedApplicants = [];
+
+    for (const recruiter of allRecruiters) {
+      // Fetch recruiter user info to get companyName and logo
+      const recruiterUser = await User.findOne({ email: recruiter.email });
+
+      const companyName =
+        recruiterUser?.details?.CompanyName || "Not specified";
+      const logo = recruiterUser?.details?.logo || "no-logo.png";
+
+      recruiter.posts.forEach((post) => {
+        post.applicants.forEach((applicant) => {
+          if (applicant.email === candidateEmail) {
+            matchedApplicants.push({
+              ...applicant.toObject(),
+              postTitle: post.title,
+              openings: post.openings,
+              location: post.city,
+              recruiterEmail: recruiter.email,
+              companyName,
+              logo,
+            });
+          }
+        });
+      });
+    }
+
+    res.status(200).json({ applicants: matchedApplicants });
+  } catch (error) {
+    console.error("Error fetching applicant data:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+const updateApplicantStatus = async (req, res) => {
+  const applicantId = req.params._id;
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ message: "Status is required" });
+  }
+
+  try {
+    const recruiter = await RecruiterPost.findOne({
+      "posts.applicants._id": applicantId,
+    });
+
+    if (!recruiter) {
+      return res.status(404).json({ message: "Applicant not found" });
+    }
+
+    let updated = false;
+
+    recruiter.posts.forEach((post) => {
+      post.applicants.forEach((applicant) => {
+        if (applicant._id.toString() === applicantId) {
+          applicant.status = status;
+          updated = true;
+        }
+      });
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: "Applicant not found in posts" });
+    }
+
+    await recruiter.save();
+    res.status(200).json({ message: "Status updated successfully" });
+  } catch (error) {
+    console.error("Update Error:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+};
 module.exports = {
   handleLogin,
   handleSignup,
@@ -602,4 +762,7 @@ module.exports = {
   GetAllPostsByEmail,
   GetAllPostsFront,
   FetchAllPostsByEmail,
+  resumeRank,
+  applicants,
+  updateApplicantStatus,
 };

@@ -1,8 +1,47 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Database, Clock, X, Bookmark } from "lucide-react";
 import CandidateLayout from "../../../Layouts/CandidateLayout";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
+import { useNavigate } from "react-router-dom";
 
+interface Application {
+  _id: string;
+  postTitle: string;
+  companyName: string;
+  logo: string;
+  status: string;
+  location: string;
+  openings: string | number;
+  appliedAt: string;
+}
 const Page = () => {
+  const navigate = useNavigate();
+  const [applications, setApplications] = useState<Application[]>([]);
+  useEffect(() => {
+    const fetchApplications = async () => {
+      const token = localStorage.getItem("token");
+      try {
+        const response = await fetch(`${API_BASE_URL}auth/applicants`, {
+          method: "GET",
+          headers: {
+            Authorization: `${token}`,
+          },
+        });
+
+        if (!response.ok) throw new Error("Failed to fetch applications");
+
+        const data = await response.json();
+        setApplications(data.applicants || []);
+      } catch (error) {
+        console.error("Error fetching applications:", error);
+      }
+    };
+
+    fetchApplications();
+  }, []);
+  const handlenavigate = () => {
+    navigate("/dashboard/candidate/applications");
+  };
   return (
     <CandidateLayout>
       <div className="space-y-6">
@@ -16,19 +55,22 @@ const Page = () => {
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {/* Applied */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 text-center">
+          <button
+            className="bg-white dark:bg-gray-800 cursor-pointer rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 text-center "
+            onClick={handlenavigate}
+          >
             <div className="flex justify-center mb-3">
               <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
                 <Database className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
             </div>
             <div className="text-3xl font-bold text-gray-900 dark:text-white mb-1">
-              0
+              {applications.length}
             </div>
             <div className="text-sm text-gray-500 dark:text-gray-400">
               Applied
             </div>
-          </div>
+          </button>
 
           {/* Alerts */}
           <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm border border-gray-200 dark:border-gray-700 text-center">

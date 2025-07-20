@@ -14,6 +14,8 @@ import {
   Loader2,
 } from "lucide-react";
 import RecruiterLayout from "../../../Layouts/RecruiterLayout";
+import toast from "react-hot-toast";
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 interface JobPost {
   _id: string;
@@ -21,13 +23,14 @@ interface JobPost {
   PostType: string;
   requirements: string;
   skills: string;
-
   applicants: {
     name: string;
     email: string;
     resumeLink: string;
     _id: string;
     appliedAt: string;
+    image: string;
+    status: string | null;
   }[];
 }
 
@@ -37,6 +40,8 @@ interface Applicant {
   resumeLink: string;
   _id: string;
   appliedAt: string;
+  image: string;
+  status: string | null;
 }
 
 interface ApplicantScore {
@@ -55,151 +60,187 @@ function AllApplications() {
   );
   const [applicantScores, setApplicantScores] = useState<ApplicantScore[]>([]);
   const [isLoadingRanks, setIsLoadingRanks] = useState(false);
+  const [fullMatchResults, setFullMatchResults] = useState<any[]>([]);
+  const [applicantSummary, setApplicantSummary] = useState<any | null>(null);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     const fetchJobPosts = async () => {
       const token = localStorage.getItem("token");
-
       try {
-        const response = await fetch(
-          "http://localhost:5000/auth/fetch-user-Details",
-          {
-            method: "GET",
-            headers: {
-              Authorization: `${token}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch job posts");
-        }
-
+        const response = await fetch(`${API_BASE_URL}auth/fetch-user-Details`, {
+          method: "GET",
+          headers: {
+            Authorization: `${token}`,
+          },
+        });
+        if (!response.ok) throw new Error("Failed to fetch job posts");
         const data = await response.json();
         setJobPosts(data.posts || []);
       } catch (error) {
         console.error("Fetch error:", error);
       }
     };
-
     fetchJobPosts();
   }, []);
-  const stripHtmlTags = (html: string) => {
-    return html.replace(/<[^>]*>/g, "").trim();
-  };
+
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showModal]);
+
+  const stripHtmlTags = (html: string) => html.replace(/<[^>]*>/g, "").trim();
 
   const getRequirementAndResumes = (job: JobPost) => {
     const requirementsText = stripHtmlTags(job.requirements || "");
     const skillsText = stripHtmlTags(job.skills || "");
-
     const combinedRequirements = `${requirementsText}. ${skillsText}`;
-
     const resumes = job.applicants.map((applicant) => ({
       name: applicant.name,
       email: applicant.email,
       resumeLink: applicant.resumeLink,
     }));
-
-    return {
-      requirement: combinedRequirements,
-      resumes: resumes,
-    };
+    return { requirement: combinedRequirements, resumes };
   };
 
   const handleJobSelect = (job: JobPost) => {
+    job.applicants.forEach((applicant) => {
+      console.log(`Applicant ${applicant.name} status: ${applicant.status}`);
+    });
+
     setSelectedJob(job.title);
     setSelectedJobId(job._id);
     setIsDropdownOpen(false);
     setShowApplicants(false);
-    // Reset scores when selecting a new job
     setApplicantScores([]);
-
     const data = getRequirementAndResumes(job);
     console.log("Requirements and Resumes:", data);
   };
 
   const handleManageApplicants = () => {
-    if (selectedJob && selectedJobId) {
-      setShowApplicants(true);
-    }
+    if (selectedJob && selectedJobId) setShowApplicants(true);
   };
 
   const handleGetRanks = async () => {
     if (!selectedJobId) return;
-
     setIsLoadingRanks(true);
     const token = localStorage.getItem("token");
 
     try {
-      // Replace this URL with your actual ranking endpoint
-      const response = await fetch(
-        `http://localhost:5000/auth/get-applicant-ranks/${selectedJobId}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+      const selectedJob = jobPosts.find((job) => job._id === selectedJobId);
+      if (!selectedJob) throw new Error("Selected job not found");
+      const requirementText =
+        stripHtmlTags(selectedJob.requirements || "") +
+        ". " +
+        stripHtmlTags(selectedJob.skills || "");
+      const resumeNames = selectedJob.applicants.map((app) =>
+        app.resumeLink.split("/").pop()
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch ranks");
-      }
-
-      const data = await response.json();
-      // Assuming the response has a structure like: { ranks: [{ applicantId: string, score: number }] }
-      setApplicantScores(data.ranks || []);
+      const response = await fetch(`${API_BASE_URL}auth/match-resumes`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `${token}`,
+        },
+        body: JSON.stringify({
+          requirement: requirementText,
+          resumes: resumeNames,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to fetch match scores");
+      const result = await response.json();
+      setFullMatchResults(result);
+      const ranks = result
+        .map((match: any) => {
+          const resumeName = match["Resume Name"];
+          const score = parseFloat(match["Matching Score"]);
+          const applicant = selectedJob.applicants.find((app) =>
+            app.resumeLink.includes(resumeName)
+          );
+          return applicant ? { applicantId: applicant._id, score } : null;
+        })
+        .filter(Boolean);
+      setApplicantScores(ranks);
     } catch (error) {
-      console.error("Error fetching ranks:", error);
-      // You might want to show an error message to the user here
+      console.error("Error during resume ranking:", error);
     } finally {
       setIsLoadingRanks(false);
     }
   };
 
-  const handleStatusChange = async (applicantId: string, newStatus: string) => {
-    console.log(`Changing status of applicant ${applicantId} to ${newStatus}`);
+  const handleViewApplicant = (applicant: Applicant) => {
+    const resumeFileName = applicant.resumeLink.split("/").pop();
+    const matched = fullMatchResults.find((match) =>
+      match["Resume Name"].includes(resumeFileName)
+    );
+    if (matched) {
+      setApplicantSummary(matched.Summary || null);
+      setShowModal(true);
+    } else {
+      setApplicantSummary(null);
+      setShowModal(false);
+    }
+  };
 
+  // Updated handleStatusChange function without window.location.reload()
+  const handleStatusChange = async (applicantId: string, newStatus: string) => {
+    console.log(applicantId);
+    console.log(newStatus);
     const token = localStorage.getItem("token");
 
     try {
-      // Replace this URL with your actual status update endpoint
       const response = await fetch(
-        `http://localhost:5000/auth/update-applicant-status`,
+        `${API_BASE_URL}auth/update-status/${applicantId}`,
         {
-          method: "POST",
+          method: "PUT",
           headers: {
             Authorization: `${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({
-            applicantId,
-            status: newStatus,
-            jobId: selectedJobId,
-          }),
+          body: JSON.stringify({ status: newStatus }),
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Failed to update applicant status");
+      if (!response.ok) throw new Error("Failed to update applicant status");
+
+      // Update the local state instead of reloading the page
+      setJobPosts((prevJobPosts) =>
+        prevJobPosts.map((job) => {
+          if (job._id === selectedJobId) {
+            return {
+              ...job,
+              applicants: job.applicants.map((applicant) =>
+                applicant._id === applicantId
+                  ? { ...applicant, status: newStatus }
+                  : applicant
+              ),
+            };
+          }
+          return job;
+        })
+      );
+
+      // Remove the applicant from scores if they're no longer unapproved
+      if (newStatus !== "unapproved") {
+        setApplicantScores((prevScores) =>
+          prevScores.filter((score) => score.applicantId !== applicantId)
+        );
       }
 
-      // You might want to refresh the applicants list or show a success message
-      console.log("Status updated successfully");
+      toast.success(`Application ${newStatus} successfully`);
     } catch (error) {
       console.error("Error updating status:", error);
-      // You might want to show an error message to the user here
+      toast.error("Failed to update application status");
     }
   };
 
-  const handleViewApplicant = (applicant: Applicant) => {
-    setSelectedApplicant(applicant);
-    console.log("Viewing applicant:", applicant);
-    console.log(jobPosts);
-  };
-
-  // Get score for a specific applicant
   const getApplicantScore = (applicantId: string): number | null => {
     const scoreData = applicantScores.find(
       (score) => score.applicantId === applicantId
@@ -207,12 +248,15 @@ function AllApplications() {
     return scoreData ? scoreData.score : null;
   };
 
-  // Check if scores are available for any applicant
-  const hasScores = applicantScores.length > 0;
-
-  // Get current job's applicants
+  // Get current job applicants with updated state
   const currentJobApplicants =
     jobPosts.find((job) => job._id === selectedJobId)?.applicants || [];
+
+  // Filter only unapproved applicants for display
+  const unapprovedApplicants = currentJobApplicants.filter(
+    (applicant) =>
+      applicant.status === "unapproved" || applicant.status === null
+  );
 
   return (
     <RecruiterLayout>
@@ -285,7 +329,12 @@ function AllApplications() {
                               </div>
                             </div>
                             <div className="text-sm text-gray-400">
-                              {job.applicants?.length || 0} applicants
+                              {job.applicants?.filter(
+                                (app) =>
+                                  app.status === "unapproved" ||
+                                  app.status === null
+                              ).length || 0}{" "}
+                              applicants
                             </div>
                           </div>
                         </button>
@@ -320,7 +369,7 @@ function AllApplications() {
                       Applicants for "{selectedJob}"
                     </h3>
                     <p className="text-gray-500 dark:text-gray-400 mt-1">
-                      {currentJobApplicants.length} total applications
+                      {unapprovedApplicants.length} unapproved applications
                     </p>
                   </div>
                   <div className="flex gap-2">
@@ -344,7 +393,7 @@ function AllApplications() {
               </div>
 
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {currentJobApplicants.map((applicant) => {
+                {unapprovedApplicants.map((applicant) => {
                   const applicantScore = getApplicantScore(applicant._id);
                   const hasScore = applicantScore !== null;
 
@@ -355,9 +404,20 @@ function AllApplications() {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4 flex-1">
-                          <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 font-semibold text-lg uppercase">
-                            {applicant.name?.charAt(0) || "A"}
-                          </div>
+                          {applicant.image ? (
+                            <img
+                              src={`${API_BASE_URL.replace(
+                                /\/$/,
+                                ""
+                              )}/${applicant.image.replace(/^\//, "")}`}
+                              alt="Applicant"
+                              className="w-10 h-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm">
+                              N/A
+                            </div>
+                          )}
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between">
@@ -409,7 +469,11 @@ function AllApplications() {
                             <div className="flex items-center gap-3 mt-4">
                               <button
                                 onClick={() => handleViewApplicant(applicant)}
-                                className="flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
+                                disabled={!hasScore}
+                                className={`flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm ${
+                                  !hasScore &&
+                                  "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                }`}
                                 type="button"
                               >
                                 <Eye className="w-4 h-4" />
@@ -466,18 +530,74 @@ function AllApplications() {
                 })}
               </div>
 
-              {currentJobApplicants.length === 0 && (
+              {unapprovedApplicants.length === 0 && (
                 <div className="p-12 text-center">
                   <User className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                    No Applications Yet
+                    No Pending Applications
                   </h3>
                   <p className="text-gray-600 dark:text-gray-400">
-                    Applications for this position will appear here once
-                    candidates start applying.
+                    All applications for this position have been processed, or
+                    no applications have been submitted yet.
                   </p>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Summary Modal */}
+          {showModal && applicantSummary && (
+            <div className="fixed inset-0 bg-black/30 dark:bg-black/60 backdrop-blur-[0px] flex items-center justify-center z-50 p-4 shadow-l">
+              <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto transition-all">
+                {/* Sticky Header */}
+                <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 p-6 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                  <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+                    Applicant Summary
+                  </h2>
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="text-gray-600 hover:text-red-500 dark:text-gray-300 dark:hover:text-red-400"
+                    title="Close"
+                  >
+                    <X className="w-6 h-6" />
+                  </button>
+                </div>
+
+                {/* Modal Content */}
+                <div className="p-8 space-y-6">
+                  <div className="space-y-5 text-base leading-relaxed text-gray-700 dark:text-gray-300">
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        Professional Summary:
+                      </h4>
+                      <p>{applicantSummary["Professional Summary"]}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        Skills:
+                      </h4>
+                      <p>{applicantSummary["Skills"]}</p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        Experience:
+                      </h4>
+                      <p className="whitespace-pre-line">
+                        {applicantSummary["Experience"]}
+                      </p>
+                    </div>
+
+                    <div>
+                      <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+                        Education:
+                      </h4>
+                      <p>{applicantSummary["Education"]}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

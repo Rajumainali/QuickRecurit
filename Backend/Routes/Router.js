@@ -73,6 +73,9 @@ const {
   GetAllPostsByEmail,
   GetAllPostsFront,
   FetchAllPostsByEmail,
+  resumeRank,
+  applicants,
+  updateApplicantStatus,
 } = require("../controller/Handler");
 const ensureAuthentication = require("../Middleware/Auth");
 
@@ -127,7 +130,10 @@ router.get(
 );
 router.get("/apply/:postId", ensureAuthentication, ApplyPost);
 router.get("/get-user-Details", ensureAuthentication, getUserDetailsByEmail);
-router.get("/GetAllPosts", GetAllPostsFront);
 router.get("/fetch-user-Details", ensureAuthentication, FetchAllPostsByEmail);
+router.get("/GetAllPosts", GetAllPostsFront);
+router.post("/match-resumes", resumeRank);
+router.get("/applicants", ensureAuthentication, applicants);
+router.put("/update-status/:_id", ensureAuthentication, updateApplicantStatus);
 
 module.exports = router;
