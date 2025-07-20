@@ -350,8 +350,18 @@ const FetchAllPostsByEmail = async (req, res) => {
     const companyName = user?.details?.CompanyName || "Unknown Company";
     const logo = user?.details?.logo || "No logo";
 
+    let totalApplicants = 0;
+    let shortlistedApplicants = 0;
+
     const allPosts = recruiter.posts.map((post) => {
       const postObj = post.toObject();
+      const applicants = post.applicants || [];
+
+      totalApplicants += applicants.length;
+      shortlistedApplicants += applicants.filter(
+        (a) => a.status?.toLowerCase() === "approved"
+      ).length;
+
       return {
         ...postObj,
         recruiterEmail: recruiter.email,
@@ -360,7 +370,12 @@ const FetchAllPostsByEmail = async (req, res) => {
       };
     });
 
-    res.status(200).json({ posts: allPosts });
+    res.status(200).json({
+      posts: allPosts,
+      totalPosts: recruiter.posts.length,
+      totalApplicants,
+      shortlistedApplicants,
+    });
   } catch (err) {
     console.error("Fetch all posts error:", err);
     res.status(500).json({ error: "Server error" });
@@ -693,6 +708,7 @@ const applicants = async (req, res) => {
               postTitle: post.title,
               openings: post.openings,
               location: post.city,
+              type: post.PostType,
               recruiterEmail: recruiter.email,
               companyName,
               logo,

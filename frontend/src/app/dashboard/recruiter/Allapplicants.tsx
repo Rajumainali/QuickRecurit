@@ -393,141 +393,158 @@ function AllApplications() {
               </div>
 
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
-                {unapprovedApplicants.map((applicant) => {
-                  const applicantScore = getApplicantScore(applicant._id);
-                  const hasScore = applicantScore !== null;
+                {unapprovedApplicants
+                  .map((applicant) => ({
+                    ...applicant,
+                    score: getApplicantScore(applicant._id),
+                  }))
+                  .sort((a, b) => {
+                    // Put those without score at the bottom
+                    if (a.score === null) return 1;
+                    if (b.score === null) return -1;
+                    return b.score - a.score;
+                  })
+                  .map((applicant) => {
+                    const applicantScore = applicant.score;
+                    const hasScore = applicantScore !== null;
 
-                  return (
-                    <div
-                      key={applicant._id}
-                      className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50"
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4 flex-1">
-                          {applicant.image ? (
-                            <img
-                              src={`${API_BASE_URL.replace(
-                                /\/$/,
-                                ""
-                              )}/${applicant.image.replace(/^\//, "")}`}
-                              alt="Applicant"
-                              className="w-10 h-10 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm">
-                              N/A
-                            </div>
-                          )}
+                    return (
+                      <div
+                        key={applicant._id}
+                        className="p-6 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-4 flex-1">
+                            {applicant.image ? (
+                              <img
+                                src={`${API_BASE_URL.replace(
+                                  /\/$/,
+                                  ""
+                                )}/${applicant.image.replace(/^\//, "")}`}
+                                alt="Applicant"
+                                className="w-10 h-10 rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center text-white text-sm">
+                                N/A
+                              </div>
+                            )}
 
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between">
-                              <div>
-                                <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                  {applicant.name}
-                                </h4>
-                                <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                                  <div className="flex items-center gap-1">
-                                    <Mail className="w-4 h-4" />
-                                    {applicant.email}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    {applicant.name}
+                                  </h4>
+                                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-1">
+                                      <Mail className="w-4 h-4" />
+                                      {applicant.email}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                                    <div className="flex items-center gap-1">
+                                      <Calendar className="w-4 h-4" />
+                                      Applied:{" "}
+                                      {new Date(
+                                        applicant.appliedAt
+                                      ).toLocaleDateString("en-US", {
+                                        year: "numeric",
+                                        month: "short",
+                                        day: "2-digit",
+                                      })}
+                                    </div>
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-4 mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                  <div className="flex items-center gap-1">
-                                    <Calendar className="w-4 h-4" />
-                                    Applied:{" "}
-                                    {new Date(
-                                      applicant.appliedAt
-                                    ).toLocaleDateString("en-US", {
-                                      year: "numeric",
-                                      month: "short",
-                                      day: "2-digit",
-                                    })}
+
+                                <div className="flex items-center gap-3">
+                                  <div className="flex items-center gap-2">
+                                    <Star className="w-4 h-4 text-yellow-500" />
+                                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                      Match Score:
+                                    </span>
+                                    {hasScore ? (
+                                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                                        {applicantScore}%
+                                      </span>
+                                    ) : (
+                                      <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
+                                        Not calculated
+                                      </span>
+                                    )}
                                   </div>
                                 </div>
                               </div>
 
-                              <div className="flex items-center gap-3">
-                                <div className="flex items-center gap-2">
-                                  <Star className="w-4 h-4 text-yellow-500" />
-                                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                    Match Score:
-                                  </span>
-                                  {hasScore ? (
-                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
-                                      {applicantScore}%
-                                    </span>
-                                  ) : (
-                                    <span className="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400">
-                                      Not calculated
-                                    </span>
-                                  )}
-                                </div>
+                              {/* Action Buttons */}
+                              <div className="flex items-center gap-3 mt-4">
+                                <button
+                                  onClick={() => handleViewApplicant(applicant)}
+                                  disabled={!hasScore}
+                                  className={`flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm ${
+                                    !hasScore &&
+                                    "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                  }`}
+                                  type="button"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                  View Details
+                                </button>
+
+                                <a
+                                  href={`http://localhost:5000${applicant.resumeLink}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-sm"
+                                >
+                                  <FileText className="w-4 h-4" />
+                                  Resume
+                                </a>
+
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(
+                                      applicant._id,
+                                      "approved"
+                                    )
+                                  }
+                                  disabled={!hasScore}
+                                  className={`flex items-center gap-1 px-3 py-1 rounded-md transition-colors text-sm ${
+                                    hasScore
+                                      ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50"
+                                      : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                  }`}
+                                  type="button"
+                                >
+                                  <Check className="w-4 h-4" />
+                                  Approve
+                                </button>
+
+                                <button
+                                  onClick={() =>
+                                    handleStatusChange(
+                                      applicant._id,
+                                      "rejected"
+                                    )
+                                  }
+                                  disabled={!hasScore}
+                                  className={`flex items-center gap-1 px-3 py-1 rounded-md transition-colors text-sm ${
+                                    hasScore
+                                      ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50"
+                                      : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
+                                  }`}
+                                  type="button"
+                                >
+                                  <X className="w-4 h-4" />
+                                  Reject
+                                </button>
                               </div>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-3 mt-4">
-                              <button
-                                onClick={() => handleViewApplicant(applicant)}
-                                disabled={!hasScore}
-                                className={`flex items-center gap-1 px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm ${
-                                  !hasScore &&
-                                  "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                                }`}
-                                type="button"
-                              >
-                                <Eye className="w-4 h-4" />
-                                View Details
-                              </button>
-
-                              <a
-                                href={`http://localhost:5000${applicant.resumeLink}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-1 px-3 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-md hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors text-sm"
-                              >
-                                <FileText className="w-4 h-4" />
-                                Resume
-                              </a>
-
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(applicant._id, "approved")
-                                }
-                                disabled={!hasScore}
-                                className={`flex items-center gap-1 px-3 py-1 rounded-md transition-colors text-sm ${
-                                  hasScore
-                                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-900/50"
-                                    : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                                }`}
-                                type="button"
-                              >
-                                <Check className="w-4 h-4" />
-                                Approve
-                              </button>
-
-                              <button
-                                onClick={() =>
-                                  handleStatusChange(applicant._id, "rejected")
-                                }
-                                disabled={!hasScore}
-                                className={`flex items-center gap-1 px-3 py-1 rounded-md transition-colors text-sm ${
-                                  hasScore
-                                    ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50"
-                                    : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 cursor-not-allowed"
-                                }`}
-                                type="button"
-                              >
-                                <X className="w-4 h-4" />
-                                Reject
-                              </button>
                             </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
 
               {unapprovedApplicants.length === 0 && (

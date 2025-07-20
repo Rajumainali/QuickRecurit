@@ -9,6 +9,7 @@ interface Application {
   logo: string;
   status: string;
   location: string;
+  type: string;
   openings: string | number;
   appliedAt: string;
 }
@@ -171,6 +172,9 @@ const Myapplication: React.FC = () => {
                   <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
                     Applied Date
                   </th>
+                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-500 dark:text-gray-300">
+                    Type
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -207,6 +211,9 @@ const Myapplication: React.FC = () => {
                       </td>
                       <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
                         {formatDate(app.appliedAt)}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-900 dark:text-gray-100">
+                        {app.type}
                       </td>
                     </tr>
                   );

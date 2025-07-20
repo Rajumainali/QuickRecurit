@@ -18,7 +18,7 @@ import Allinternships from "./app/dashboard/recruiter/Allinternships";
 import PostInternshipORjobs from "./app/dashboard/recruiter/PostInternshipORjob";
 import AllApplications from "./app/dashboard/recruiter/Allapplicants";
 import ShortlistApplicants from "./app/dashboard/recruiter/ShortlistApplicants";
-import SavedApplicants from "./app/dashboard/recruiter/SavedApplicants";
+
 import Profile from "./app/dashboard/recruiter/CompanyProfile";
 import PostInternshipform from "./app/dashboard/recruiter/PostInternshipform";
 import PostJobform from "./app/dashboard/recruiter/PostJobform";
@@ -132,7 +132,7 @@ const App: React.FC = () => {
             path="/onboarding/candidate/about-yourself"
             element={
               isLoggedIn && role === "candidate" ? (
-                <AboutYourself onSuccess={() => {} } from="" />
+                <AboutYourself onSuccess={() => {}} from="" />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -142,7 +142,7 @@ const App: React.FC = () => {
             path="/onboarding/recruiter/about-yourself"
             element={
               isLoggedIn && role === "recruiter" ? (
-                <AboutYourself onSuccess={() => {}}  from=""/>
+                <AboutYourself onSuccess={() => {}} from="" />
               ) : (
                 <Navigate to="/login" replace />
               )
@@ -198,7 +198,7 @@ const App: React.FC = () => {
               )
             }
           />
-       
+
           <Route
             path="/dashboard/recruiter/internships-jobs/posts/internship"
             element={
@@ -239,16 +239,7 @@ const App: React.FC = () => {
               )
             }
           />
-          <Route
-            path="dashboard/recruiter/saved"
-            element={
-              isLoggedIn && role === "recruiter" ? (
-                <SavedApplicants />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
+
           <Route
             path="dashboard/recruiter/profile"
             element={
